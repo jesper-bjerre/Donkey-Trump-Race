@@ -7,7 +7,10 @@ import { itemTargetLabel } from '../src/components/PowerUpHUD.js';
 import { RaceHUD, type HudState } from '../src/components/RaceHUD.js';
 import type { GameSocket } from '../src/net/GameSocket.js';
 import { LandingRoomEntry } from '../src/screens/LandingRoomEntry.js';
+import { MVP_VERTICAL_MAP } from '@dtr/shared-level';
+import { MatchSession } from '../src/net/MatchSession.js';
 import { MatchResults } from '../src/screens/MatchResults.js';
+import { MatchScreen } from '../src/screens/MatchScreen.js';
 import { MultiplayerLobby } from '../src/screens/MultiplayerLobby.js';
 import { PrivacyPage } from '../src/screens/PrivacyPage.js';
 import { RESULT_STATES } from './fixtures/accessibilityStates.js';
@@ -321,5 +324,32 @@ describe('PrivacyPage', () => {
       subjectReference: 'LarsFan 10 Dec',
       contactEmail: 'lars@example.com',
     });
+  });
+});
+
+describe('MatchScreen without WebGL', () => {
+  it('explains the problem and offers a way out instead of a blank screen', () => {
+    const socket = {
+      onMessage: () => () => undefined,
+      metrics: { latencyMs: null, lastMessageAt: 0 },
+    } as unknown as GameSocket;
+    const match = new MatchSession('m_0123456789ab', MVP_VERTICAL_MAP, 'p_0', socket);
+    const onLeave = vi.fn();
+    render(
+      <MatchScreen
+        match={match}
+        connection="open"
+        onOpenHelp={() => undefined}
+        onLeave={onLeave}
+      />,
+    );
+    const heading = screen.getByRole('heading', {
+      level: 1,
+      name: '3D graphics are not available',
+    });
+    expect(document.activeElement).toBe(heading);
+    expect(screen.getByRole('alert').textContent).toMatch(/WebGL/);
+    fireEvent.click(screen.getByRole('button', { name: 'Leave room' }));
+    expect(onLeave).toHaveBeenCalledOnce();
   });
 });

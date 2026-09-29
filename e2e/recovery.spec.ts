@@ -20,21 +20,22 @@ test('404: an unknown room offers checking the code or creating a room', async (
   await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
 });
 
-test('409: joining a race in progress explains and offers another room', async ({
-  page,
-  browser,
-}) => {
-  const code = await createRoom(page, 'Host');
-  await page.getByRole('button', { name: 'Start race' }).click();
-  await expect(page.locator('.viewport canvas')).toBeVisible();
-  const late = await joinViaInvite(browser, code, 'Latecomer');
-  const alert = late.page.getByRole('alert');
-  await expect(alert).toContainText('already started');
-  await alert.getByRole('button', { name: 'Pick another room' }).click();
-  await expect(late.page.getByLabel('Room code')).toHaveValue('');
-  await expect(late.page.getByLabel('Room code')).toBeFocused();
-  await late.context.close();
-});
+test(
+  '409: joining a race in progress explains and offers another room',
+  { tag: '@webgl' },
+  async ({ page, browser }) => {
+    const code = await createRoom(page, 'Host');
+    await page.getByRole('button', { name: 'Start race' }).click();
+    await expect(page.locator('.viewport canvas')).toBeVisible();
+    const late = await joinViaInvite(browser, code, 'Latecomer');
+    const alert = late.page.getByRole('alert');
+    await expect(alert).toContainText('already started');
+    await alert.getByRole('button', { name: 'Pick another room' }).click();
+    await expect(late.page.getByLabel('Room code')).toHaveValue('');
+    await expect(late.page.getByLabel('Room code')).toBeFocused();
+    await late.context.close();
+  },
+);
 
 test('410: an expired room points to creating a new one', async ({ page }) => {
   await page.route('**/api/v1/rooms/*/join', (route) =>

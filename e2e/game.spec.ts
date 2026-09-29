@@ -18,7 +18,7 @@ test('invalid join shows a recoverable error and focuses the room code', async (
   await expect(page.getByLabel('Room code')).toBeFocused();
 });
 
-test('a solo host can start a race and see the 3D view', async ({ page }) => {
+test('a solo host can start a race and see the 3D view', { tag: '@webgl' }, async ({ page }) => {
   await createRoom(page, 'Jumpman Løkke');
   await expect(
     page.getByRole('listitem', { name: /Player 1, Jumpman Løkke, Red, host/ }),
@@ -29,7 +29,7 @@ test('a solo host can start a race and see the 3D view', async ({ page }) => {
   await expect(page.getByRole('status', { name: 'Objective' })).toContainText('Motzfeldt');
 });
 
-test('two players join, ready up and race together', async ({ browser }) => {
+test('two players join, ready up and race together', { tag: '@webgl' }, async ({ browser }) => {
   const hostContext = await browser.newContext();
   const guestContext = await browser.newContext();
   const host = await hostContext.newPage();
