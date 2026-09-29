@@ -1,4 +1,3 @@
-import { ITEM_DEFINITIONS } from '@dtr/shared-items';
 import {
   colorById,
   type ItemType,
@@ -6,6 +5,7 @@ import {
   type PlayerColorId,
 } from '@dtr/shared-protocol';
 import type { ConnectionStatus } from '../net/GameSocket.js';
+import { PowerUpHUD } from './PowerUpHUD.js';
 
 export interface HudState {
   phase: MatchPhase;
@@ -15,6 +15,10 @@ export interface HudState {
   playerCount: number;
   floor: number;
   floorCount: number;
+  /** 0–100: how far along the route to Motzfeldt the local player is. */
+  rescueProgressPct: number;
+  /** Short-lived status such as "Mette shoved you!"; null when nothing is happening. */
+  statusLine: string | null;
   heldItem: ItemType | null;
   penaltyMs: number;
   penaltyKind: 'fall' | 'knockdown' | null;
@@ -45,7 +49,6 @@ const ordinal = (n: number) =>
 
 export function RaceHUD({ hud, connection, onOpenHelp }: Props) {
   const countdown = hud.phase === 'countdown' ? Math.ceil(hud.countdownMs / 1000) : null;
-  const item = hud.heldItem ? ITEM_DEFINITIONS[hud.heldItem] : null;
   const objective =
     hud.finishRank !== null
       ? `You rescued Motzfeldt — ${ordinal(hud.finishRank)} place!`
@@ -82,6 +85,15 @@ export function RaceHUD({ hud, connection, onOpenHelp }: Props) {
         {hud.raceEndsInMs !== null && hud.phase === 'racing' && (
           <span className="hud-timer"> · race ends in {Math.ceil(hud.raceEndsInMs / 1000)}s</span>
         )}
+        <div className="hud-progress">
+          <progress
+            max={100}
+            value={hud.rescueProgressPct}
+            aria-label="Progress to Motzfeldt"
+            aria-valuetext={`${hud.rescueProgressPct}% of the way to Motzfeldt`}
+          />
+          <span aria-hidden="true">{hud.rescueProgressPct}%</span>
+        </div>
       </section>
 
       {countdown !== null && countdown > 0 && (
@@ -98,28 +110,24 @@ export function RaceHUD({ hud, connection, onOpenHelp }: Props) {
           </span>
         )}
 
-      {hud.penaltyMs > 0 && (
-        <div className="hud-penalty" role="status" aria-label="Penalty">
-          {hud.penaltyKind === 'fall' ? 'Respawning' : 'Seeing stars'} …{' '}
-          {(hud.penaltyMs / 1000).toFixed(1)}s
+      <div className="hud-penalty-region" role="status" aria-label="Penalty">
+        {hud.penaltyMs > 0 ? (
+          <div className="hud-penalty">
+            {hud.penaltyKind === 'fall' ? 'Respawning' : 'Seeing stars'} …{' '}
+            {(hud.penaltyMs / 1000).toFixed(1)}s
+          </div>
+        ) : (
+          <span className="visually-hidden">No penalty — you can run.</span>
+        )}
+      </div>
+
+      {hud.statusLine && (
+        <div className="hud-status-line" role="status">
+          {hud.statusLine}
         </div>
       )}
 
-      <section className="hud-item" aria-label="Power-up">
-        <div className={`item-slot${item ? ' full' : ''}`}>
-          <span aria-hidden="true">{item?.icon ?? '?'}</span>
-        </div>
-        <div>
-          <strong>{item ? item.displayName : 'No item'}</strong>
-          <small>{item ? 'Press E to use' : 'Grab a ? box'}</small>
-          {hud.speedBoostMs > 0 && (
-            <small className="effect">Kaffe Boost {(hud.speedBoostMs / 1000).toFixed(1)}s</small>
-          )}
-          {hud.shieldMs > 0 && (
-            <small className="effect">Shield {(hud.shieldMs / 1000).toFixed(1)}s</small>
-          )}
-        </div>
-      </section>
+      <PowerUpHUD heldItem={hud.heldItem} speedBoostMs={hud.speedBoostMs} shieldMs={hud.shieldMs} />
 
       <section className="hud-feed" aria-label="Race events" aria-live="polite">
         {hud.events.slice(0, 4).map((e) => (

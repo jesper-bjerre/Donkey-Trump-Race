@@ -1,9 +1,15 @@
 import { useState } from 'react';
 import type { LobbyPlayer, RoomSession, RoomState } from '@dtr/shared-protocol';
+import { HostStartButton } from '../components/lobby/HostStartButton.js';
 import { LobbyRoster } from '../components/lobby/LobbyRoster.js';
+import { useRosterAnnouncements } from '../components/lobby/useRosterAnnouncements.js';
 import { mapRoomEntryError } from '../errors/roomEntryErrorMapper.js';
 import { ApiError, startMatch } from '../net/api.js';
 import type { ConnectionStatus, GameSocket } from '../net/GameSocket.js';
+import { inviteUrl } from '../routing/routes.js';
+
+/** Must match the server's RECONNECT_GRACE_MS. */
+export const RECONNECT_GRACE_SECONDS = 60;
 
 export interface LobbyView {
   roomCode: string;
@@ -49,6 +55,7 @@ export function MultiplayerLobby({
   const isHost = lobby ? lobby.hostId === session.playerId : session.role === 'host';
   const blocker = lobby ? startBlocker(lobby) : 'Connecting…';
   const roomCode = lobby?.roomCode ?? session.roomCode;
+  const announcement = useRosterAnnouncements(lobby?.players, session.playerId);
 
   const start = async () => {
     setStarting(true);
@@ -67,7 +74,7 @@ export function MultiplayerLobby({
   };
 
   const copyLink = async () => {
-    const url = `${window.location.origin}/?room=${roomCode}`;
+    const url = inviteUrl(window.location.origin, roomCode);
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -116,6 +123,13 @@ export function MultiplayerLobby({
             localPlayerId={session.playerId}
           />
         )}
+        <p className="muted reconnect-hint" id="reconnect-hint">
+          Lost your connection? Your slot is kept for {RECONNECT_GRACE_SECONDS} seconds — the game
+          reconnects automatically.
+        </p>
+        <p className="visually-hidden" aria-live="polite" data-testid="roster-announcement">
+          {announcement}
+        </p>
       </section>
 
       <section className="card lobby-actions" aria-label="Match controls">
@@ -131,20 +145,12 @@ export function MultiplayerLobby({
           </button>
         )}
         {isHost && (
-          <>
-            <button
-              type="button"
-              className="primary"
-              disabled={blocker !== null || starting || lobby?.state !== 'lobby'}
-              aria-describedby="start-status"
-              onClick={() => void start()}
-            >
-              {starting ? 'Starting…' : 'Start race'}
-            </button>
-            <p id="start-status" className="muted" role="status">
-              {blocker ?? 'Everyone is ready!'}
-            </p>
-          </>
+          <HostStartButton
+            blocker={blocker}
+            starting={starting}
+            inLobby={lobby?.state === 'lobby'}
+            onStart={() => void start()}
+          />
         )}
         {!isHost && <p className="muted">The host starts the race when everyone is ready.</p>}
         {error && (

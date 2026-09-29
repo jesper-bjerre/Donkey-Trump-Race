@@ -1,0 +1,15 @@
+/* Colour tokens: keep in sync with tokens.ts (verified by accessibilityTokens.test.ts). */
+:root {
+  --bg: #0e1030;
+  --bg-2: #1a1f5c;
+  --surface: #1c2150;
+  --surface-2: #262c66;
+  --text: #f5f6ff;
+  --muted: #b8bde6;
+  --accent: #ffcc00;
+  --accent-text: #1a1400;
+  --danger: #ff6b6b;
+  --danger-text: #ffd1d1;
+  --success: #69f0ae;
+  --focus: #80d8ff;
+}

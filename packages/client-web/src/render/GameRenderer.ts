@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { LevelMetadata } from '@dtr/shared-level';
 import {
   colorById,
+  GAME_TITLE,
   type BarrelSnapshot,
   type BossSnapshot,
   type ItemBoxSnapshot,
@@ -85,6 +86,9 @@ export class GameRenderer {
   private motzfeldt: THREE.Group | null = null;
   private cameraInitialized = false;
   private elapsed = 0;
+  /** Honour prefers-reduced-motion: no blinking, bobbing or spinning effects. */
+  private readonly reducedMotion: boolean;
+  private readonly itemCooldownMaterial: THREE.MeshStandardMaterial;
 
   constructor(
     private readonly container: HTMLElement,
@@ -109,9 +113,18 @@ export class GameRenderer {
       opacity: 0.92,
     });
     this.starMaterial = new THREE.SpriteMaterial({ map: starTexture(), depthTest: false });
+    this.itemCooldownMaterial = new THREE.MeshStandardMaterial({
+      color: '#9e9e9e',
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+    });
+    this.reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 
     this.buildEnvironment();
     this.buildLevel();
+    // Stable scene-object names for automated checks (no player data is exposed).
+    this.renderer.domElement.dataset.sceneObjects = this.sceneObjectNames().join(' ');
     this.resizeObserver = new ResizeObserver(() => this.resize());
     this.resizeObserver.observe(container);
     this.resize();
@@ -119,6 +132,15 @@ export class GameRenderer {
 
   get canvas(): HTMLCanvasElement {
     return this.renderer.domElement;
+  }
+
+  /** Names of the static level objects (mvp.*, boss.*), for smoke tests. */
+  sceneObjectNames(): string[] {
+    const names: string[] = [];
+    this.scene.traverse((object) => {
+      if (/^(mvp|boss)\./.test(object.name)) names.push(object.name);
+    });
+    return names.sort();
   }
 
   dispose(): void {
@@ -295,7 +317,7 @@ export class GameRenderer {
     );
     bossSprite.center.set(0.5, 0);
     bossSprite.position.set(level.bossSpawn.x, bossFloor.y, level.bossSpawn.z);
-    bossSprite.name = 'boss.trump';
+    bossSprite.name = 'boss.trumpPlaceholder';
     this.boss = bossSprite;
     this.scene.add(bossSprite);
     for (let i = 0; i < 3; i++) {
@@ -328,6 +350,22 @@ export class GameRenderer {
     bubble.position.set(0.3, 2.5, 0);
     motz.add(bubble);
     motz.position.set(rescueFloor.endX - 2.2, rescueFloor.y, 0);
+
+    // Game title painted on the back wall, above the rescue platform.
+    const { texture: titleTexture, aspect: titleAspect } = labelTexture(
+      GAME_TITLE,
+      '#ffd54f',
+      'Rescue Motzfeldt!',
+    );
+    const title = new THREE.Sprite(new THREE.SpriteMaterial({ map: titleTexture }));
+    title.name = 'mvp.title';
+    title.scale.set(2.2 * titleAspect, 2.2, 1);
+    title.position.set(
+      (level.bounds.leftWallX + level.bounds.rightFallEdgeX) / 2 - 8,
+      rescueFloor.y + 3.5,
+      level.bounds.zMin - 0.5,
+    );
+    this.scene.add(title);
     this.motzfeldt = motz;
     this.scene.add(motz);
   }
@@ -365,6 +403,7 @@ export class GameRenderer {
     label.center.set(0.5, 0);
     label.position.y = CHARACTER_HEIGHT + 0.15;
     label.renderOrder = 10;
+    label.name = 'player.label';
 
     const stars = new THREE.Group();
     for (let i = 0; i < 5; i++) {
@@ -374,6 +413,7 @@ export class GameRenderer {
       stars.add(star);
     }
     stars.visible = false;
+    stars.name = `effect.stars.${player.slotIndex}`;
 
     const shield = new THREE.Mesh(
       new THREE.SphereGeometry(1.05, 24, 16),
@@ -433,20 +473,29 @@ export class GameRenderer {
       material.rotation = knocked ? Math.PI / 2 : 0;
       v.sprite.center.set(0.5, knocked ? 0.3 : 0);
       const blinking = player.fallPenalty && disabled;
-      material.opacity = blinking ? (Math.sin(this.elapsed * 20) > 0 ? 0.35 : 0.9) : 1;
+      material.opacity = blinking
+        ? this.reducedMotion
+          ? 0.5
+          : Math.sin(this.elapsed * 20) > 0
+            ? 0.35
+            : 0.9
+        : 1;
       const running = Math.hypot(player.vx, player.vz) > 0.5 && player.grounded;
-      v.sprite.position.y = running ? Math.abs(Math.sin(this.elapsed * 14)) * 0.08 : 0;
+      v.sprite.position.y =
+        running && !this.reducedMotion ? Math.abs(Math.sin(this.elapsed * 14)) * 0.08 : 0;
 
       v.stars.visible = player.knockedDown && disabled;
       if (v.stars.visible) {
         v.stars.children.forEach((star, i) => {
-          const a = this.elapsed * 4 + (i / v.stars.children.length) * Math.PI * 2;
+          const spin = this.reducedMotion ? 0 : this.elapsed * 4;
+          const a = spin + (i / v.stars.children.length) * Math.PI * 2;
           star.position.set(Math.cos(a) * 0.55, 1.0 + Math.sin(a * 2) * 0.05, Math.sin(a) * 0.55);
         });
       }
       v.shield.visible = player.shieldUntilMs > frame.serverTimeMs;
       const boosted = player.speedBoostUntilMs > frame.serverTimeMs;
-      v.ring.scale.setScalar(boosted ? 1.2 + Math.sin(this.elapsed * 18) * 0.15 : 1);
+      const pulse = this.reducedMotion ? 0 : Math.sin(this.elapsed * 18) * 0.15;
+      v.ring.scale.setScalar(boosted ? 1.2 + pulse : 1);
       v.ring.visible = player.grounded;
     }
     for (const [id, v] of this.players) {
@@ -488,9 +537,12 @@ export class GameRenderer {
         this.itemBoxes.set(box.id, mesh);
         this.scene.add(mesh);
       }
-      mesh.visible = box.active;
-      mesh.position.set(box.x, box.y + 1 + Math.sin(this.elapsed * 3 + box.x) * 0.12, box.z);
-      mesh.rotation.y = this.elapsed * 1.5;
+      // Used boxes stay as a faint ghost while they respawn, so players see where they were.
+      mesh.material = box.active ? this.itemMaterial : this.itemCooldownMaterial;
+      mesh.userData.state = box.active ? 'active' : 'cooldown';
+      const bob = this.reducedMotion ? 0 : Math.sin(this.elapsed * 3 + box.x) * 0.12;
+      mesh.position.set(box.x, box.y + 1 + bob, box.z);
+      mesh.rotation.y = this.reducedMotion ? 0.6 : this.elapsed * 1.5;
       mesh.rotation.x = 0.4;
     }
   }

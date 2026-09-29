@@ -1,31 +1,48 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import {
   GAME_TITLE,
   isValidNickname,
   isValidRoomCode,
   type RoomSession,
 } from '@dtr/shared-protocol';
-import { mapRoomEntryError, type EntryErrorView } from '../errors/roomEntryErrorMapper.js';
+import { RoomEntryRecovery } from '../components/entry/RoomEntryRecovery.js';
+import {
+  mapRoomEntryError,
+  type EntryAction,
+  type EntryErrorView,
+} from '../errors/roomEntryErrorMapper.js';
 import { ApiError, createRoom, joinRoom } from '../net/api.js';
+import {
+  detectBrowserSupport,
+  SUPPORTED_BROWSERS_TEXT,
+  type BrowserSupport,
+} from '../platform/browserSupport.js';
 
 interface Props {
   onJoined: (session: RoomSession) => void;
   onOpenHelp: () => void;
   notice: string | null;
+  /** Prefilled from an invite link (/rooms/ABCDE). */
+  initialRoomCode?: string;
+  /** Injectable for tests; defaults to real feature detection. */
+  browserSupport?: BrowserSupport;
 }
 
-function initialRoomCode(): string {
-  const code = new URLSearchParams(window.location.search).get('room') ?? '';
-  return code.toUpperCase().slice(0, 5);
-}
-
-export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
+export function LandingRoomEntry({
+  onJoined,
+  onOpenHelp,
+  notice,
+  initialRoomCode = '',
+  browserSupport,
+}: Props) {
   const [nickname, setNickname] = useState('');
-  const [roomCode, setRoomCode] = useState(initialRoomCode);
+  const [roomCode, setRoomCode] = useState(initialRoomCode.toUpperCase().slice(0, 5));
   const [busy, setBusy] = useState<'create' | 'join' | null>(null);
   const [error, setError] = useState<EntryErrorView | null>(null);
+  const [lastKind, setLastKind] = useState<'create' | 'join'>('join');
   const nicknameRef = useRef<HTMLInputElement>(null);
   const roomCodeRef = useRef<HTMLInputElement>(null);
+  const support = useMemo(() => browserSupport ?? detectBrowserSupport(), [browserSupport]);
 
   useEffect(() => {
     nicknameRef.current?.focus();
@@ -37,6 +54,7 @@ export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
   }, [error]);
 
   const run = async (kind: 'create' | 'join') => {
+    setLastKind(kind);
     if (!isValidNickname(nickname)) {
       setError(mapRoomEntryError('INVALID_NICKNAME'));
       return;
@@ -55,6 +73,32 @@ export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
       setError(mapRoomEntryError(e instanceof ApiError ? e.envelope.error.code : 'INTERNAL_ERROR'));
     } finally {
       setBusy(null);
+    }
+  };
+
+  const recover = (action: EntryAction) => {
+    switch (action) {
+      case 'edit-nickname':
+        nicknameRef.current?.focus();
+        nicknameRef.current?.select();
+        break;
+      case 'retry-room-code':
+        roomCodeRef.current?.focus();
+        roomCodeRef.current?.select();
+        break;
+      case 'return-to-entry':
+        setRoomCode('');
+        setError(null);
+        roomCodeRef.current?.focus();
+        break;
+      case 'create-new-room':
+        setRoomCode('');
+        void run('create');
+        break;
+      case 'retry-later':
+      case 'retry':
+        void run(lastKind);
+        break;
     }
   };
 
@@ -77,6 +121,12 @@ export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
       </header>
 
       <section className="card entry-card" aria-label="Create or join a room">
+        {!support.supported && (
+          <p className="notice browser-notice" role="note">
+            {SUPPORTED_BROWSERS_TEXT}
+            {!support.webgl && ' This browser did not provide WebGL, so the 3D race may not load.'}
+          </p>
+        )}
         {notice && (
           <p className="notice" role="status">
             {notice}
@@ -115,16 +165,7 @@ export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
             <small id="room-code-hint">Leave empty to host a new room.</small>
           </div>
 
-          {error && (
-            <div className="error" role="alert">
-              <p>{error.message}</p>
-              {error.action === 'create-new-room' && (
-                <button type="button" className="link-button" onClick={() => void run('create')}>
-                  {error.actionLabel}
-                </button>
-              )}
-            </div>
-          )}
+          {error && <RoomEntryRecovery error={error} onAction={recover} />}
 
           <div className="actions">
             <button
@@ -145,9 +186,14 @@ export function LandingRoomEntry({ onJoined, onOpenHelp, notice }: Props) {
             </button>
           </div>
         </form>
-        <button type="button" className="link-button help-link" onClick={onOpenHelp}>
-          How to play &amp; privacy
-        </button>
+        <div className="actions">
+          <button type="button" className="link-button help-link" onClick={onOpenHelp}>
+            How to play &amp; privacy
+          </button>
+          <a className="link-button" href="/privacy">
+            Privacy notice
+          </a>
+        </div>
       </section>
       <footer className="fineprint">
         A parody party game. Guest play only — no accounts. Up to 5 players per room.
