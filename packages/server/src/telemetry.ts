@@ -5,8 +5,10 @@ import {
   createPseudonymHasher,
   FileBlobClient,
   InMemoryBlobClient,
+  LoggingTelemetryPublisher,
   NoopTelemetryPublisher,
   PrivacyRequestService,
+  TeeTelemetryPublisher,
   TelemetryBatchExporter,
   type AuditLog,
   type BlobClient,
@@ -37,6 +39,7 @@ class NoopAudit implements AuditLog {
 export async function createServerTelemetry(
   config: ServerConfig,
   warn: Log,
+  info: Log = () => undefined,
 ): Promise<ServerTelemetry> {
   const { telemetry } = config;
   const hasher = createPseudonymHasher(telemetry.hashSalt);
@@ -71,7 +74,12 @@ export async function createServerTelemetry(
   exporter.start(telemetry.flushIntervalMs);
   const audit = new AuditWriter(auditBlobs, config.environment, warn);
   return {
-    publisher: new BatchTelemetryPublisher(exporter, config.environment, warn),
+    publisher: config.telemetry.logEvents
+      ? new TeeTelemetryPublisher([
+          new BatchTelemetryPublisher(exporter, config.environment, warn),
+          new LoggingTelemetryPublisher(config.environment, info),
+        ])
+      : new BatchTelemetryPublisher(exporter, config.environment, warn),
     audit,
     hasher,
     privacy: new PrivacyRequestService(telemetryBlobs, hasher, audit),

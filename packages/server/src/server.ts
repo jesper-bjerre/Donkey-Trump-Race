@@ -38,7 +38,11 @@ export async function createServer(
   let logError: (message: string, fields?: Record<string, unknown>) => void = () => undefined;
   const telemetry =
     options.telemetry ??
-    (await createServerTelemetry(config, (message, fields) => logWarn(message, fields)));
+    (await createServerTelemetry(
+      config,
+      (message, fields) => logWarn(message, fields),
+      (message, fields) => logInfo(message, fields),
+    ));
   const game = new GameService({
     rooms,
     tokens,

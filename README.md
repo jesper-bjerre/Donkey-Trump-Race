@@ -63,24 +63,60 @@ TypeScript pnpm monorepo, server-authoritative (clients send inputs, never posit
 | `packages/shared-simulation` | Pure deterministic movement step (used by the server and client prediction)       |
 | `packages/shared-items`      | Item definitions and comeback weighting                                           |
 | `packages/server`            | Fastify REST lobby, `ws` gateway (`/ws`), 60 Hz match simulation, 20 Hz snapshots |
+| `packages/server-telemetry`  | Telemetry taxonomy, JSONL export to Blob, audit log, GDPR requests, beta KPIs     |
 | `packages/client-web`        | React UI + Three.js renderer, client prediction/reconciliation and interpolation  |
+| `infra/azure`                | Terraform for Azure Container Apps, ACR, Key Vault, Blob, monitoring (see below)  |
 
-Server environment variables: `PORT` (8080), `HOST`, `ROOM_TOKEN_SECRET` (required in production),
-`ALLOW_SOLO`, `ALLOWED_ORIGINS` (comma-separated WebSocket origin allow-list), `CLIENT_DIST_DIR`.
+Server environment variables:
+
+| Variable                                       | Purpose                                                                                       |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `PORT` (8080), `HOST`                          | Listen address                                                                                |
+| `APP_ENV`                                      | Environment name in telemetry and audit records (`dev`, `staging`, `production`)              |
+| `ROOM_TOKEN_SECRET`                            | Room token signing key (required in production; Key Vault reference in Azure)                 |
+| `KEY_VAULT_URL`                                | Optional: read secrets from Key Vault with managed identity instead of env vars               |
+| `ALLOWED_ORIGINS`                              | Comma-separated origins allowed for WebSocket upgrades and cross-origin REST (CORS)           |
+| `ALLOW_SOLO`                                   | Allow 1-player matches (local testing)                                                        |
+| `HSTS`, `TRUST_PROXY`                          | Default on when `NODE_ENV=production`                                                         |
+| `TELEMETRY_SINK`                               | `none` (default), `memory`, `file` (writes to `TELEMETRY_DATA_DIR`, default `.data`), `azure` |
+| `TELEMETRY_STORAGE_URL`, `TELEMETRY_HASH_SALT` | Blob endpoint and pseudonym salt for the `azure` sink                                         |
+| `CLIENT_DIST_DIR`                              | Built client to serve (auto-detected)                                                         |
 
 ## Quality gates
 
 ```sh
-pnpm lint && pnpm format:check && pnpm typecheck && pnpm test   # unit + integration (Vitest)
-pnpm build && pnpm test:e2e                                      # Playwright against the built app
-pnpm sprites                                                     # regenerate sprites from docs/design/graphics
+pnpm lint && pnpm format:check && pnpm typecheck
+pnpm test:unit          # Vitest: unit + React component tests (jsdom, Testing Library, axe-core)
+pnpm test:integration   # Vitest: REST + WebSocket against a real server instance
+pnpm build && pnpm test:e2e      # Playwright, Chromium + Firefox, against the built app
+pnpm test:a11y          # axe checks (component + browser); pnpm test:keyboard for keyboard-only flows
+pnpm fixtures:regenerate         # rewrite committed expected fixtures after an intended rule change
+pnpm sprites                     # regenerate sprites from docs/design/graphics
 ```
 
-CI runs the same steps in `.github/workflows/validate.yml`. The `Dockerfile` builds one image serving the
-game on port 8080 with a `/healthz` check.
+Operational tools:
 
-## Not yet implemented
+```sh
+pnpm smoke:staging -- --baseUrl https://<env>          # post-deploy smoke test
+pnpm soak:multiplayer -- --baseUrl http://localhost:8080 --rooms=20 --playersPerRoom=5
+pnpm beta:summary -- --releaseCandidateId rc-1 --source file:.data/telemetry
+pnpm workflow:lint                                      # actionlint + SHA-pinned actions
+pnpm security:checksums / pnpm security:sbom
+```
 
-From the backlog, Azure infrastructure (Terraform), deployment pipelines, telemetry export to Blob Storage,
-GDPR request endpoints and audit records are deferred. Names and likenesses are parody and need legal/IP
-review before any public release.
+CI: `.github/workflows/validate.yml` (quality gates, Terraform, Playwright on both browsers),
+`security.yml` (dependency review and audit, gitleaks, Trivy, SBOM, checksums, workflow lint),
+`deploy.yml` (main → dev; manual staging/production with approval) and
+`deploy-staging-smoke.yml`. The `Dockerfile` builds one non-root image with only `node` in the
+runtime layer, serving the game on port 8080 with a `/healthz` check.
+
+## Deployment
+
+Azure infrastructure and the GitHub OIDC setup are described step by step in
+[`infra/README.md`](infra/README.md). Nothing has been provisioned yet.
+
+## Before a public release
+
+Names and likenesses are parody and need legal/IP review before any public release; the beta
+sign-off report (`pnpm beta:summary`) tracks that review together with privacy and accessibility
+in `docs/beta/release-gates.json`.

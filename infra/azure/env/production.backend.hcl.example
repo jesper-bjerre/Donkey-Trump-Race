@@ -1,0 +1,6 @@
+# Copy to env/production.backend.hcl (git-ignored); values come from the bootstrap outputs.
+resource_group_name  = "<tfstate-resource-group>"
+storage_account_name = "<tfstate-storage-account>"
+container_name       = "tfstate"
+key                  = "donkey-trump-race/production.tfstate"
+use_azuread_auth     = true

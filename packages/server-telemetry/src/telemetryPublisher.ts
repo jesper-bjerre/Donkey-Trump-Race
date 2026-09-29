@@ -80,6 +80,59 @@ export class RecordingTelemetryPublisher implements TelemetryPublisher {
   async flush(): Promise<void> {}
 }
 
+/**
+ * Mirrors validated events to structured logs (`msg: "telemetry"`). In Azure these land in
+ * Log Analytics via the Container Apps environment and feed the dashboards and alerts,
+ * while Blob storage keeps the long-term JSONL evidence.
+ */
+export class LoggingTelemetryPublisher implements TelemetryPublisher {
+  constructor(
+    private readonly environment: string,
+    private readonly log: (message: string, fields: Record<string, unknown>) => void,
+  ) {}
+
+  publish<K extends TelemetryEventName>(
+    name: K,
+    context: PublishContext,
+    payload: TelemetryEventPayloadMap[K],
+  ): void {
+    try {
+      const event = buildTelemetryEvent(
+        name,
+        { ...context, environment: this.environment },
+        payload,
+      );
+      this.log('telemetry', {
+        event: event.name,
+        roomHash: event.roomHash,
+        matchId: event.matchId,
+        ...event.payload,
+      });
+    } catch {
+      // Invalid events are reported by the primary publisher.
+    }
+  }
+
+  async flush(): Promise<void> {}
+}
+
+/** Fans one event out to several publishers (e.g. Blob batches plus structured logs). */
+export class TeeTelemetryPublisher implements TelemetryPublisher {
+  constructor(private readonly publishers: TelemetryPublisher[]) {}
+
+  publish<K extends TelemetryEventName>(
+    name: K,
+    context: PublishContext,
+    payload: TelemetryEventPayloadMap[K],
+  ): void {
+    for (const publisher of this.publishers) publisher.publish(name, context, payload);
+  }
+
+  async flush(): Promise<void> {
+    await Promise.all(this.publishers.map((p) => p.flush()));
+  }
+}
+
 export class NoopTelemetryPublisher implements TelemetryPublisher {
   publish(): void {}
   async flush(): Promise<void> {}

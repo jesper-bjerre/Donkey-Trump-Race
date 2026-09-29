@@ -1,0 +1,6 @@
+// Matches ended early by an unrecoverable server error, with the error class.
+ContainerAppConsoleLogs_CL
+| extend entry = parse_json(Log_s)
+| where tostring(entry.msg) == "telemetry" and tostring(entry.event) == "match_breaking_error"
+| summarize errors = count() by errorClass = tostring(entry.errorClass), bin(TimeGenerated, 15m)
+| order by TimeGenerated desc

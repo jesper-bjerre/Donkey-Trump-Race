@@ -30,6 +30,7 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
       telemetryContainer: 'telemetry',
       auditContainer: 'audit',
       flushIntervalMs: 60_000,
+      logEvents: false,
     },
     ...overrides,
   };

@@ -1,0 +1,6 @@
+// Realtime disconnects by phase and close code, per 5 minutes.
+ContainerAppConsoleLogs_CL
+| extend entry = parse_json(Log_s)
+| where tostring(entry.msg) == "telemetry" and tostring(entry.event) == "disconnect"
+| summarize disconnects = count() by phase = tostring(entry.phase), closeCode = toint(entry.closeCode), bin(TimeGenerated, 5m)
+| order by TimeGenerated desc

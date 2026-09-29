@@ -1,0 +1,130 @@
+name: Deploy environment
+description: >
+  Terraform plan/apply for one environment, push the scanned image to its registry,
+  roll the Container App to that image and smoke-test the deployment.
+
+inputs:
+  environment:
+    description: dev, staging or production
+    required: true
+  image-tag:
+    description: Immutable image tag (the git SHA)
+    required: true
+  azure-client-id:
+    required: true
+  azure-tenant-id:
+    required: true
+  azure-subscription-id:
+    required: true
+  resource-group:
+    description: Environment resource group (from infra/azure/bootstrap)
+    required: true
+  location:
+    required: true
+  tfstate-resource-group:
+    required: true
+  tfstate-storage-account:
+    required: true
+  alert-email:
+    required: false
+    default: ''
+
+outputs:
+  app-url:
+    description: Public URL of the deployed game
+    value: ${{ steps.apply.outputs.app-url }}
+
+runs:
+  using: composite
+  steps:
+    - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3.1.2
+      with:
+        terraform_wrapper: false
+
+    - name: Azure login (OIDC)
+      uses: azure/login@7184910d9eb2b1c5e48f7073824a90609bb9b6d6 # v2.3.1
+      with:
+        client-id: ${{ inputs.azure-client-id }}
+        tenant-id: ${{ inputs.azure-tenant-id }}
+        subscription-id: ${{ inputs.azure-subscription-id }}
+
+    - name: Terraform init
+      shell: bash
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ inputs.azure-client-id }}
+        ARM_TENANT_ID: ${{ inputs.azure-tenant-id }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azure-subscription-id }}
+      run: |
+        terraform -chdir=infra/azure fmt -check -recursive
+        terraform -chdir=infra/azure init -input=false \
+          -backend-config="resource_group_name=${{ inputs.tfstate-resource-group }}" \
+          -backend-config="storage_account_name=${{ inputs.tfstate-storage-account }}" \
+          -backend-config="container_name=tfstate" \
+          -backend-config="key=donkey-trump-race/${{ inputs.environment }}.tfstate" \
+          -backend-config="use_azuread_auth=true" \
+          -backend-config="use_oidc=true"
+        terraform -chdir=infra/azure validate
+
+    - name: Ensure registry exists
+      shell: bash
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ inputs.azure-client-id }}
+        ARM_TENANT_ID: ${{ inputs.azure-tenant-id }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azure-subscription-id }}
+        TF_VAR_environment: ${{ inputs.environment }}
+        TF_VAR_resource_group_name: ${{ inputs.resource-group }}
+        TF_VAR_location: ${{ inputs.location }}
+        TF_VAR_alert_email: ${{ inputs.alert-email }}
+      run: |
+        # First deploy of an environment: the image needs a registry before the app can run it.
+        terraform -chdir=infra/azure apply -input=false -auto-approve -target=module.container_registry
+
+    - name: Push image
+      id: push
+      shell: bash
+      run: |
+        ACR_NAME=$(terraform -chdir=infra/azure output -raw acr_name)
+        ACR_SERVER=$(terraform -chdir=infra/azure output -raw acr_login_server)
+        IMAGE="$ACR_SERVER/donkey-trump-race:${{ inputs.image-tag }}"
+        az acr login --name "$ACR_NAME"
+        gunzip -c "${{ runner.temp }}/image/image.tar.gz" | docker load
+        docker tag "donkey-trump-race:${{ inputs.image-tag }}" "$IMAGE"
+        docker push "$IMAGE"
+        echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+
+    - name: Terraform plan and apply
+      id: apply
+      shell: bash
+      env:
+        ARM_USE_OIDC: 'true'
+        ARM_CLIENT_ID: ${{ inputs.azure-client-id }}
+        ARM_TENANT_ID: ${{ inputs.azure-tenant-id }}
+        ARM_SUBSCRIPTION_ID: ${{ inputs.azure-subscription-id }}
+        TF_VAR_environment: ${{ inputs.environment }}
+        TF_VAR_resource_group_name: ${{ inputs.resource-group }}
+        TF_VAR_location: ${{ inputs.location }}
+        TF_VAR_alert_email: ${{ inputs.alert-email }}
+        TF_VAR_container_image: ${{ steps.push.outputs.image }}
+      run: |
+        terraform -chdir=infra/azure plan -input=false -out=tfplan
+        terraform -chdir=infra/azure apply -input=false tfplan
+        echo "app-url=$(terraform -chdir=infra/azure output -raw app_url)" >> "$GITHUB_OUTPUT"
+
+    - name: Health smoke check (/healthz)
+      shell: bash
+      run: |
+        # The new revision takes a moment to become ready; any non-200 after the retries fails.
+        for attempt in $(seq 1 30); do
+          status=$(curl -s -o /tmp/healthz.json -w '%{http_code}' "${{ steps.apply.outputs.app-url }}/healthz" || true)
+          if [ "$status" = "200" ]; then cat /tmp/healthz.json; echo; exit 0; fi
+          echo "attempt $attempt: /healthz returned $status"; sleep 10
+        done
+        echo "::error::/healthz did not return 200"; exit 1
+
+    - name: Deployment smoke test
+      shell: bash
+      env:
+        SMOKE_BASE_URL: ${{ steps.apply.outputs.app-url }}
+      run: pnpm smoke:staging

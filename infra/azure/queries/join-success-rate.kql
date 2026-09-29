@@ -1,0 +1,12 @@
+// Share of join attempts that reached the realtime welcome within 10 s, per hour.
+ContainerAppConsoleLogs_CL
+| extend entry = parse_json(Log_s)
+| where tostring(entry.msg) == "telemetry"
+| extend event = tostring(entry.event)
+| where event in ("join_attempt", "join_success")
+| summarize
+    attempts = countif(event == "join_attempt"),
+    fastJoins = countif(event == "join_success" and toint(entry.joinLatencyMs) <= 10000)
+    by bin(TimeGenerated, 1h)
+| extend joinSuccessRate = iff(attempts == 0, real(null), round(todouble(fastJoins) / attempts, 3))
+| order by TimeGenerated asc

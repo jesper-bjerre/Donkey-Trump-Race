@@ -8,9 +8,11 @@ import {
   buildTelemetryEvent,
   createPseudonymHasher,
   InMemoryBlobClient,
+  LoggingTelemetryPublisher,
   maskNickname,
   PrivacyRequestService,
   RecordingTelemetryPublisher,
+  TeeTelemetryPublisher,
   TelemetryBatchExporter,
   telemetryBlobPath,
   type BlobClient,
@@ -192,5 +194,23 @@ describe('privacy requests', () => {
       ok: false,
       error: 'invalid_request',
     });
+  });
+});
+
+describe('logging and tee publishers', () => {
+  it('logs validated events without identifiers beyond hashes and fans out', async () => {
+    const lines: Array<[string, Record<string, unknown>]> = [];
+    const recorder = new RecordingTelemetryPublisher();
+    const tee = new TeeTelemetryPublisher([
+      recorder,
+      new LoggingTelemetryPublisher('dev', (m, f) => lines.push([m, f])),
+    ]);
+    tee.publish('fall', { roomHash: 'a'.repeat(16) }, { slotIndex: 2 });
+    tee.publish('fall', {}, { slotIndex: 9 });
+    await tee.flush();
+    expect(recorder.events).toHaveLength(1);
+    expect(lines).toEqual([
+      ['telemetry', { event: 'fall', roomHash: 'a'.repeat(16), matchId: undefined, slotIndex: 2 }],
+    ]);
   });
 });

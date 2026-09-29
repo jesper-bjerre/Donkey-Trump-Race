@@ -25,7 +25,10 @@
     "fixtures:regenerate": "tsx scripts/fixtures/regenerate.ts && prettier --write --log-level warn \"packages/*/test/fixtures/**/*.json\"",
     "beta:summary": "tsx scripts/beta/summary.ts",
     "smoke:staging": "tsx scripts/smoke/staging-smoke.ts",
-    "soak:multiplayer": "tsx scripts/soak/multiplayer-soak.ts"
+    "soak:multiplayer": "tsx scripts/soak/multiplayer-soak.ts",
+    "workflow:lint": "node scripts/security/workflow-lint.mjs",
+    "security:checksums": "node scripts/security/checksums.mjs",
+    "security:sbom": "node scripts/security/sbom.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

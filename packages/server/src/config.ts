@@ -29,6 +29,8 @@ export interface ServerConfig {
     telemetryContainer: string;
     auditContainer: string;
     flushIntervalMs: number;
+    /** Also log each event as `msg: "telemetry"` for Log Analytics dashboards and alerts. */
+    logEvents: boolean;
   };
 }
 
@@ -92,6 +94,8 @@ export async function loadConfig(
       telemetryContainer: env.TELEMETRY_CONTAINER ?? 'telemetry',
       auditContainer: env.AUDIT_CONTAINER ?? 'audit',
       flushIntervalMs: Number(env.TELEMETRY_FLUSH_INTERVAL_MS ?? 60_000),
+      logEvents:
+        env.TELEMETRY_LOG_EVENTS !== undefined ? truthy(env.TELEMETRY_LOG_EVENTS) : production,
     },
   };
 }

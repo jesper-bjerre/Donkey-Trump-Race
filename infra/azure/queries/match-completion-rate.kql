@@ -1,0 +1,12 @@
+// Started matches that ended with at least one rescue, per hour.
+ContainerAppConsoleLogs_CL
+| extend entry = parse_json(Log_s)
+| where tostring(entry.msg) == "telemetry"
+| extend event = tostring(entry.event)
+| where event in ("match_start", "match_end")
+| summarize
+    started = countif(event == "match_start"),
+    completed = countif(event == "match_end" and tostring(entry.outcome) == "completed" and toint(entry.finishers) > 0)
+    by bin(TimeGenerated, 1h)
+| extend completionRate = iff(started == 0, real(null), round(todouble(completed) / started, 3))
+| order by TimeGenerated asc
