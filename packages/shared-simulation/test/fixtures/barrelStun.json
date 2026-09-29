@@ -1,0 +1,6 @@
+{
+  "name": "barrelStun",
+  "description": "A barrel hits at 45000 ms of match time; movement inputs are rejected until exactly 47000 ms.",
+  "hitAtMs": 45000,
+  "inputAtMs": [45000, 45016, 46000, 46999, 47000, 47017, 47500]
+}

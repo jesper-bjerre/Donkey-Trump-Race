@@ -1,0 +1,6 @@
+{
+  "effectType": "OPPONENT_STUN",
+  "category": "opponentAffecting",
+  "target": "leader",
+  "durationMs": 1500
+}

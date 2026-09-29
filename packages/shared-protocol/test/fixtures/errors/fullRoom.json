@@ -1,0 +1,10 @@
+{
+  "statusCode": 409,
+  "error": {
+    "code": "ROOM_FULL",
+    "message": "That room already has 5 players. Try again later or create a new room.",
+    "recoveryAction": "retry-later"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

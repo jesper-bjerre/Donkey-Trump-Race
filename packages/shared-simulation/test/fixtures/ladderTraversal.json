@@ -1,0 +1,21 @@
+{
+  "name": "ladderTraversal",
+  "description": "Standing inside ladder l0 and holding climb up reaches floor 1.",
+  "start": {
+    "x": 36,
+    "y": 0,
+    "z": 0.5,
+    "floor": 0
+  },
+  "steps": [
+    {
+      "ticks": 120,
+      "input": {
+        "moveX": 0,
+        "moveZ": 0,
+        "climb": 1,
+        "jump": false
+      }
+    }
+  ]
+}

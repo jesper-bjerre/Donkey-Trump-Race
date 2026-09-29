@@ -1,0 +1,10 @@
+{
+  "statusCode": 429,
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Too many attempts. Please wait a moment and try again.",
+    "recoveryAction": "retry-later"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

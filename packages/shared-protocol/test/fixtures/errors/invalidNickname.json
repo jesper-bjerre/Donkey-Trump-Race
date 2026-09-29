@@ -1,0 +1,10 @@
+{
+  "statusCode": 400,
+  "error": {
+    "code": "INVALID_NICKNAME",
+    "message": "Use 2–16 letters, numbers, spaces, hyphen, or underscore.",
+    "recoveryAction": "edit-nickname"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

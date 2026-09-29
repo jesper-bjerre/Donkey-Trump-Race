@@ -1,0 +1,10 @@
+{
+  "statusCode": 409,
+  "error": {
+    "code": "ROOM_IN_PROGRESS",
+    "message": "That match has already started. Wait for it to finish or create a new room.",
+    "recoveryAction": "return-to-entry"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

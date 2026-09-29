@@ -1,0 +1,21 @@
+{
+  "name": "leftWallBlock",
+  "description": "Running left into the wall clamps x at leftWallX plus the player radius.",
+  "start": {
+    "x": 2,
+    "y": 0,
+    "z": 0,
+    "floor": 0
+  },
+  "steps": [
+    {
+      "ticks": 60,
+      "input": {
+        "moveX": -1,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": false
+      }
+    }
+  ]
+}

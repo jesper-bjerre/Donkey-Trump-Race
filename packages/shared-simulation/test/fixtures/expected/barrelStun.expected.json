@@ -1,0 +1,34 @@
+{
+  "hitAtMs": 45000,
+  "stunnedUntilMs": 47000,
+  "inputs": [
+    {
+      "atMs": 45000,
+      "accepted": false
+    },
+    {
+      "atMs": 45016,
+      "accepted": false
+    },
+    {
+      "atMs": 46000,
+      "accepted": false
+    },
+    {
+      "atMs": 46999,
+      "accepted": false
+    },
+    {
+      "atMs": 47000,
+      "accepted": true
+    },
+    {
+      "atMs": 47017,
+      "accepted": true
+    },
+    {
+      "atMs": 47500,
+      "accepted": true
+    }
+  ]
+}

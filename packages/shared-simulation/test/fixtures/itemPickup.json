@@ -1,0 +1,24 @@
+{
+  "name": "itemPickup",
+  "description": "A trailing player (rank 4 of 5) runs left along floor 1 into item box i1a; the award uses the seeded match RNG.",
+  "start": {
+    "x": 26,
+    "y": 4,
+    "z": -1.5,
+    "floor": 1
+  },
+  "steps": [
+    {
+      "ticks": 80,
+      "input": {
+        "moveX": -1,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": false
+      }
+    }
+  ],
+  "rngSeed": 1234,
+  "rankIndex": 3,
+  "playerCount": 5
+}

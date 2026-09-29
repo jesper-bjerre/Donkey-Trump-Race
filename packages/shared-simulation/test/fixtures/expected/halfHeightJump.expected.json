@@ -1,0 +1,26 @@
+{
+  "finalState": {
+    "x": 10,
+    "y": 1.828761,
+    "z": 0,
+    "vx": 0,
+    "vy": 2.454451,
+    "vz": 0,
+    "kx": 0,
+    "kz": 0,
+    "facing": 1,
+    "floor": 0,
+    "grounded": false,
+    "climbing": null
+  },
+  "ticks": 60,
+  "maxY": 1.909058,
+  "events": {
+    "jumped": 2,
+    "landed": 1,
+    "startedClimb": 0,
+    "finishedClimb": 0,
+    "fallConfirmed": 0
+  },
+  "firstFallTick": null
+}

@@ -1,0 +1,10 @@
+{
+  "statusCode": 410,
+  "error": {
+    "code": "RECONNECT_EXPIRED",
+    "message": "Your reconnect window has passed and your slot was released. Join again to play.",
+    "recoveryAction": "return-to-entry"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

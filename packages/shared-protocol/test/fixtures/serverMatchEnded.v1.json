@@ -1,0 +1,17 @@
+{
+  "type": "server.matchEnded",
+  "protocolVersion": 1,
+  "matchId": "m_sample1",
+  "finishOrder": [
+    {
+      "rank": 1,
+      "playerId": "p_sample1",
+      "slotIndex": 0,
+      "nickname": "LarsFan",
+      "color": "red",
+      "finishTick": 5400,
+      "serverTimeMs": 90000
+    }
+  ],
+  "highlights": { "barrelHits": 3, "falls": 1, "shoves": 2, "itemUses": 1 }
+}

@@ -1,11 +1,12 @@
+import { applyBarrelStun, hasActiveShield, isMovementDisabled } from '@dtr/shared-simulation';
 import type { PlayerSim } from '../types.js';
 
 export function isDisabled(player: PlayerSim, nowMs: number): boolean {
-  return nowMs < player.movementDisabledUntilMs;
+  return isMovementDisabled(player, nowMs);
 }
 
 export function hasShield(player: PlayerSim, nowMs: number): boolean {
-  return nowMs < player.shieldUntilMs;
+  return hasActiveShield(player, nowMs);
 }
 
 /** Consumes an active shield. Returns true if the hit was blocked. */
@@ -17,8 +18,7 @@ export function consumeShield(player: PlayerSim, nowMs: number): boolean {
 
 /** Knocks a player down for `durationMs` of match time; stunned players are immune to re-stun. */
 export function applyKnockdown(player: PlayerSim, nowMs: number, durationMs: number): void {
-  player.movementDisabledUntilMs = nowMs + durationMs;
-  player.knockedDown = true;
+  applyBarrelStun(player, nowMs, durationMs);
   player.motion.vx = 0;
   player.motion.vz = 0;
   player.motion.kx = 0;
