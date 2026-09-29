@@ -142,7 +142,8 @@ export class MatchRunner {
     const now = this.nowMs;
     if (this.phaseValue === 'countdown' && now >= this.raceStartsAtMs) this.phaseValue = 'racing';
     const racing = this.phaseValue === 'racing';
-    const emit = (e: Omit<GameEvent, 'serverTimeMs'>) => this.pendingEvents.push({ ...e, serverTimeMs: now });
+    const emit = (e: Omit<GameEvent, 'serverTimeMs'>) =>
+      this.pendingEvents.push({ ...e, serverTimeMs: now });
 
     for (const player of this.players) {
       this.consumeInput(player);
@@ -153,12 +154,19 @@ export class MatchRunner {
         player.fallPenalty = false;
         player.movementDisabledUntilMs = 0;
       }
-      const { state, events } = stepPlayerMovement(player.motion, player.currentInput, TICK_DT, this.level, {
-        disabled: !racing || isDisabled(player, now),
-        speedMultiplier: now < player.speedBoostUntilMs ? 1.5 : 1,
-      });
+      const { state, events } = stepPlayerMovement(
+        player.motion,
+        player.currentInput,
+        TICK_DT,
+        this.level,
+        {
+          disabled: !racing || isDisabled(player, now),
+          speedMultiplier: now < player.speedBoostUntilMs ? 1.5 : 1,
+        },
+      );
       player.motion = state;
-      player.falling = !state.grounded && !state.climbing && state.x > this.level.bounds.rightFallEdgeX;
+      player.falling =
+        !state.grounded && !state.climbing && state.x > this.level.bounds.rightFallEdgeX;
       if (FallRespawnSystem.detectFall(this.level, player, events.fallConfirmed)) {
         FallRespawnSystem.applyRespawn(this.level, player, now);
         this.stats.falls++;
@@ -201,7 +209,11 @@ export class MatchRunner {
   }
 
   result(): MatchResult {
-    return { matchId: this.matchId, finishOrder: [...this.finishOrder], highlights: { ...this.stats } };
+    return {
+      matchId: this.matchId,
+      finishOrder: [...this.finishOrder],
+      highlights: { ...this.stats },
+    };
   }
 
   /** Test/debug access to internal player state. */
@@ -266,18 +278,27 @@ export class MatchRunner {
 
   private progressOf(player: PlayerSim): number {
     if (player.finishRank !== null) return 10000 - player.finishRank;
-    return computeProgress(this.level, player.motion.floor, player.motion.x) + player.motion.y * 0.01;
+    return (
+      computeProgress(this.level, player.motion.floor, player.motion.x) + player.motion.y * 0.01
+    );
   }
 
   /** Active players ordered leader-first. */
   private ranking(): PlayerSim[] {
     return this.players
       .filter(isActive)
-      .sort((a, b) => this.progressOf(b) - this.progressOf(a) || a.info.slotIndex - b.info.slotIndex);
+      .sort(
+        (a, b) => this.progressOf(b) - this.progressOf(a) || a.info.slotIndex - b.info.slotIndex,
+      );
   }
 
   private resolveRescues(now: number, emit: (e: Omit<GameEvent, 'serverTimeMs'>) => void): void {
-    const arrivals = RescueObjective.checkCompletion(this.level, this.players, this.tickCount, this.finishOrder.length);
+    const arrivals = RescueObjective.checkCompletion(
+      this.level,
+      this.players,
+      this.tickCount,
+      this.finishOrder.length,
+    );
     for (const player of arrivals) {
       player.motion.vx = 0;
       player.motion.vz = 0;
@@ -295,7 +316,8 @@ export class MatchRunner {
       });
       emit({ kind: 'rescue', playerId: player.info.id });
     }
-    if (arrivals.length > 0 && this.raceEndsAtMs === null) this.raceEndsAtMs = now + FINISH_GRACE_MS;
+    if (arrivals.length > 0 && this.raceEndsAtMs === null)
+      this.raceEndsAtMs = now + FINISH_GRACE_MS;
   }
 
   private checkEnd(now: number): void {

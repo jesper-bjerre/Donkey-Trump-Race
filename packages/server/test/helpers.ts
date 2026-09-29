@@ -16,6 +16,9 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
   };
 }
 
-export function createTestServer(overrides: Partial<ServerConfig> = {}, options: CreateServerOptions = {}) {
+export function createTestServer(
+  overrides: Partial<ServerConfig> = {},
+  options: CreateServerOptions = {},
+) {
   return createServer(testConfig(overrides), { autoStart: false, ...options });
 }

@@ -67,20 +67,29 @@ describe('websocket message parsing', () => {
   });
 
   it('round-trips a server snapshot message', () => {
-    const raw = JSON.stringify({ type: 'server.snapshot', protocolVersion: 1, snapshot: serverSnapshot });
+    const raw = JSON.stringify({
+      type: 'server.snapshot',
+      protocolVersion: 1,
+      snapshot: serverSnapshot,
+    });
     const parsed = parseServerMessage(raw);
     expect(parsed.ok).toBe(true);
   });
 
   it('rejects unknown message types', () => {
-    expect(parseClientMessage(JSON.stringify({ type: 'client.teleport', protocolVersion: 1 }))).toEqual({
+    expect(
+      parseClientMessage(JSON.stringify({ type: 'client.teleport', protocolVersion: 1 })),
+    ).toEqual({
       ok: false,
       reason: 'invalid_schema',
     });
   });
 
   it('rejects oversized payloads before parsing', () => {
-    const raw = encodeClientMessage({ type: 'client.hello', roomToken: 'x'.repeat(MAX_CLIENT_MESSAGE_BYTES) });
+    const raw = encodeClientMessage({
+      type: 'client.hello',
+      roomToken: 'x'.repeat(MAX_CLIENT_MESSAGE_BYTES),
+    });
     expect(parseClientMessage(raw)).toEqual({ ok: false, reason: 'too_large' });
   });
 

@@ -46,7 +46,8 @@ export class PlayerShoveSystem {
         b.motion.x += nx * push;
         b.motion.z += nz * push;
 
-        const key = a.info.id < b.info.id ? `${a.info.id}|${b.info.id}` : `${b.info.id}|${a.info.id}`;
+        const key =
+          a.info.id < b.info.id ? `${a.info.id}|${b.info.id}` : `${b.info.id}|${a.info.id}`;
         if ((this.cooldowns.get(key) ?? -Infinity) > nowMs) continue;
 
         // Only self-propelled velocity counts; knockback does not chain.

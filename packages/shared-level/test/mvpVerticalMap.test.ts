@@ -53,7 +53,10 @@ describe('MVP vertical map', () => {
   it('rejects a ladder pointing to a missing floor', () => {
     const broken: LevelMetadata = {
       ...MVP_VERTICAL_MAP,
-      ladders: [...MVP_VERTICAL_MAP.ladders, { ...MVP_VERTICAL_MAP.ladders[0]!, id: 'bad', topFloorId: 'nope' }],
+      ladders: [
+        ...MVP_VERTICAL_MAP.ladders,
+        { ...MVP_VERTICAL_MAP.ladders[0]!, id: 'bad', topFloorId: 'nope' },
+      ],
     };
     const result = validateLevelMetadata(broken);
     expect(result.valid).toBe(false);
@@ -61,8 +64,14 @@ describe('MVP vertical map', () => {
   });
 
   it('increases progress along the zigzag route', () => {
-    expect(computeProgress(MVP_VERTICAL_MAP, 0, 30)).toBeGreaterThan(computeProgress(MVP_VERTICAL_MAP, 0, 10));
-    expect(computeProgress(MVP_VERTICAL_MAP, 1, 30)).toBeGreaterThan(computeProgress(MVP_VERTICAL_MAP, 0, 39));
-    expect(computeProgress(MVP_VERTICAL_MAP, 1, 10)).toBeGreaterThan(computeProgress(MVP_VERTICAL_MAP, 1, 30));
+    expect(computeProgress(MVP_VERTICAL_MAP, 0, 30)).toBeGreaterThan(
+      computeProgress(MVP_VERTICAL_MAP, 0, 10),
+    );
+    expect(computeProgress(MVP_VERTICAL_MAP, 1, 30)).toBeGreaterThan(
+      computeProgress(MVP_VERTICAL_MAP, 0, 39),
+    );
+    expect(computeProgress(MVP_VERTICAL_MAP, 1, 10)).toBeGreaterThan(
+      computeProgress(MVP_VERTICAL_MAP, 1, 30),
+    );
   });
 });

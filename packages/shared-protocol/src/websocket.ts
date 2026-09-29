@@ -22,7 +22,11 @@ const v = z.literal(PROTOCOL_VERSION);
 const axis = z.number().finite().min(-1).max(1);
 
 export const ClientInputCommandSchema = z.object({
-  seq: z.number().int().min(0).max(2 ** 31),
+  seq: z
+    .number()
+    .int()
+    .min(0)
+    .max(2 ** 31),
   /** World-space run axis along x. */
   moveX: axis,
   /** Lane change axis along z. */
@@ -34,7 +38,11 @@ export const ClientInputCommandSchema = z.object({
 export type ClientInputCommand = z.infer<typeof ClientInputCommandSchema>;
 
 export const ClientMessageSchema = z.discriminatedUnion('type', [
-  z.object({ type: z.literal('client.hello'), protocolVersion: v, roomToken: z.string().max(1024) }),
+  z.object({
+    type: z.literal('client.hello'),
+    protocolVersion: v,
+    roomToken: z.string().max(1024),
+  }),
   z.object({ type: z.literal('client.ready'), protocolVersion: v, ready: z.boolean() }),
   z.object({
     type: z.literal('client.input'),
@@ -161,7 +169,8 @@ export function byteLength(raw: string): number {
   return bytes;
 }
 
-export type ParseResult<T> = { ok: true; message: T } | { ok: false; reason: 'too_large' | 'invalid_json' | 'invalid_schema' };
+export type ParseResult<T> =
+  { ok: true; message: T } | { ok: false; reason: 'too_large' | 'invalid_json' | 'invalid_schema' };
 
 function parseWith<T>(schema: z.ZodType<T>, raw: string): ParseResult<T> {
   if (byteLength(raw) > MAX_CLIENT_MESSAGE_BYTES) return { ok: false, reason: 'too_large' };
@@ -172,7 +181,9 @@ function parseWith<T>(schema: z.ZodType<T>, raw: string): ParseResult<T> {
     return { ok: false, reason: 'invalid_json' };
   }
   const parsed = schema.safeParse(json);
-  return parsed.success ? { ok: true, message: parsed.data } : { ok: false, reason: 'invalid_schema' };
+  return parsed.success
+    ? { ok: true, message: parsed.data }
+    : { ok: false, reason: 'invalid_schema' };
 }
 
 export function parseClientMessage(raw: string): ParseResult<ClientMessage> {
@@ -188,7 +199,9 @@ export function parseServerMessage(raw: string): ParseResult<ServerMessage> {
     return { ok: false, reason: 'invalid_json' };
   }
   const parsed = ServerMessageSchema.safeParse(json);
-  return parsed.success ? { ok: true, message: parsed.data } : { ok: false, reason: 'invalid_schema' };
+  return parsed.success
+    ? { ok: true, message: parsed.data }
+    : { ok: false, reason: 'invalid_schema' };
 }
 
 export function validateClientInputCommand(value: unknown): ClientInputCommand | null {

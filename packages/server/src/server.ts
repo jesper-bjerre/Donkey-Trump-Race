@@ -20,7 +20,10 @@ export interface CreateServerOptions {
   rateLimit?: { limit: number; windowMs: number };
 }
 
-export async function createServer(config: ServerConfig, options: CreateServerOptions = {}): Promise<GameServer> {
+export async function createServer(
+  config: ServerConfig,
+  options: CreateServerOptions = {},
+): Promise<GameServer> {
   const tokens = new RoomTokenService(config.tokenSecret, config.tokenTtlMs);
   const rooms = new RoomManager({ allowSolo: config.allowSolo });
   let logInfo: (message: string, fields?: Record<string, unknown>) => void = () => undefined;

@@ -174,7 +174,8 @@ export class RoomManager {
     // Every slot still in the room counts: stale ones are released by sweep() after the grace period.
     const present = [...room.slots.values()];
     if (present.length < this.minPlayers) throw new GameError('NOT_ENOUGH_PLAYERS');
-    if (present.some((s) => s.id !== room.hostId && !s.ready)) throw new GameError('PLAYERS_NOT_READY');
+    if (present.some((s) => s.id !== room.hostId && !s.ready))
+      throw new GameError('PLAYERS_NOT_READY');
     room.state = 'in_progress';
     room.matchCount += 1;
     room.lastActivityAt = this.now();
@@ -210,7 +211,11 @@ export class RoomManager {
   }
 
   /** Releases stale slots and expires idle rooms. Returns affected room codes. */
-  sweep(): { expired: string[]; changed: string[]; released: Array<{ code: string; playerId: string }> } {
+  sweep(): {
+    expired: string[];
+    changed: string[];
+    released: Array<{ code: string; playerId: string }>;
+  } {
     const now = this.now();
     const expired: string[] = [];
     const changed: string[] = [];
@@ -227,7 +232,8 @@ export class RoomManager {
         continue;
       }
       if (room.state !== 'lobby') continue;
-      const idleSinceMatchEnd = room.lastMatchEndedAt !== null && room.lastActivityAt === room.lastMatchEndedAt;
+      const idleSinceMatchEnd =
+        room.lastMatchEndedAt !== null && room.lastActivityAt === room.lastMatchEndedAt;
       const ttl = idleSinceMatchEnd ? POST_MATCH_TTL_MS : LOBBY_IDLE_TTL_MS;
       if (now - room.lastActivityAt >= ttl) {
         this.expireRoom(code);

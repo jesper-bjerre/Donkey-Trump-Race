@@ -35,6 +35,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     tokenTtlMs: 30 * 60 * 1000,
     allowSolo: env.ALLOW_SOLO === '1' || env.ALLOW_SOLO === 'true',
     clientDistDir: env.CLIENT_DIST_DIR ?? findClientDist(),
-    allowedOrigins: env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()) : null,
+    allowedOrigins: env.ALLOWED_ORIGINS
+      ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim())
+      : null,
   };
 }

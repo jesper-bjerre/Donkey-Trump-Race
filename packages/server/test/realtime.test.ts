@@ -26,7 +26,11 @@ async function boot(allowSolo = false) {
 }
 
 async function createSession(nickname = 'Host'): Promise<RoomSession> {
-  const res = await server.app.inject({ method: 'POST', url: '/api/v1/rooms', payload: { nickname } });
+  const res = await server.app.inject({
+    method: 'POST',
+    url: '/api/v1/rooms',
+    payload: { nickname },
+  });
   return res.json();
 }
 
@@ -122,7 +126,10 @@ describe('realtime gateway', () => {
     await client.waitFor('server.matchStart');
 
     client.socket.send(
-      encodeClientMessage({ type: 'client.input', input: { seq: 1, moveX: 1, moveZ: 0, climb: 0, jump: false } }),
+      encodeClientMessage({
+        type: 'client.input',
+        input: { seq: 1, moveX: 1, moveZ: 0, climb: 0, jump: false },
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     server.game.advance(240); // 3 s countdown + 1 s of running
@@ -147,6 +154,10 @@ describe('realtime gateway', () => {
     const second = await connect();
     second.socket.send(encodeClientMessage({ type: 'client.hello', roomToken: session.roomToken }));
     const welcome = await second.waitFor('server.welcome');
-    expect(welcome).toMatchObject({ playerId: session.playerId, slotIndex: 0, color: session.color });
+    expect(welcome).toMatchObject({
+      playerId: session.playerId,
+      slotIndex: 0,
+      color: session.color,
+    });
   });
 });

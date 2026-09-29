@@ -14,7 +14,11 @@ async function create(nickname = 'LarsFan') {
 }
 
 async function join(code: string, nickname: string) {
-  return server.app.inject({ method: 'POST', url: `/api/v1/rooms/${code}/join`, payload: { nickname } });
+  return server.app.inject({
+    method: 'POST',
+    url: `/api/v1/rooms/${code}/join`,
+    payload: { nickname },
+  });
 }
 
 describe('room API', () => {
@@ -30,6 +34,14 @@ describe('room API', () => {
       playerId: session.playerId,
     });
     expect(res.headers['x-content-type-options']).toBe('nosniff');
+  });
+
+  it('accepts Danish characters in nicknames', async () => {
+    server = await createTestServer();
+    const res = await create('Jumpman Løkke');
+    expect(res.statusCode).toBe(201);
+    const room = server.game.rooms.getRoom(res.json().roomCode);
+    expect([...room!.slots.values()][0]?.nickname).toBe('Jumpman Løkke');
   });
 
   it('rejects invalid nicknames without creating a room', async () => {

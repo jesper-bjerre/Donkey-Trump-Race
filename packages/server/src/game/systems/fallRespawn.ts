@@ -7,7 +7,11 @@ const KILL_Y = -30;
 export const FallRespawnSystem = {
   /** True once a player has dropped off the right edge (or out of the world entirely). */
   detectFall(level: LevelMetadata, player: PlayerSim, fallConfirmed: boolean): boolean {
-    return fallConfirmed || player.motion.y < KILL_Y || player.motion.x > level.bounds.rightFallEdgeX + 20;
+    return (
+      fallConfirmed ||
+      player.motion.y < KILL_Y ||
+      player.motion.x > level.bounds.rightFallEdgeX + 20
+    );
   },
 
   /** Respawns at the safe spawn of the floor the player fell from and applies the delay penalty. */

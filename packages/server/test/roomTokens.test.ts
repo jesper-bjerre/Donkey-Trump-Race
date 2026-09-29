@@ -23,7 +23,9 @@ describe('RoomTokenService', () => {
     const tokens = new RoomTokenService(SECRET, 60_000);
     const { token } = tokens.issue(subject);
     const [payload, signature] = token.split('.');
-    const forged = Buffer.from(JSON.stringify({ ...subject, role: 'host', playerId: 'p_2' })).toString('base64url');
+    const forged = Buffer.from(
+      JSON.stringify({ ...subject, role: 'host', playerId: 'p_2' }),
+    ).toString('base64url');
     expect(tokens.verify(`${forged}.${signature}`)).toBeNull();
     expect(tokens.verify(`${payload}.x${signature}`)).toBeNull();
     const other = new RoomTokenService('another-secret-placeholder-xyz', 60_000);

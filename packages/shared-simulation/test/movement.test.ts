@@ -30,7 +30,10 @@ function run(
   return state;
 }
 
-const input = (partial: Partial<MovementInput>): MovementInput => ({ ...NEUTRAL_INPUT, ...partial });
+const input = (partial: Partial<MovementInput>): MovementInput => ({
+  ...NEUTRAL_INPUT,
+  ...partial,
+});
 
 describe('half-height jump', () => {
   it('cannot reach the next floor from a standing jump', () => {
@@ -75,7 +78,9 @@ describe('ladder traversal', () => {
 
   it('does not move while stunned on the ladder', () => {
     const climbing = run(createMotionState(36, 0, 0, 0), input({ climb: 1 }), 20);
-    const frozen = stepPlayerMovement(climbing, input({ climb: 1 }), TICK_DT, LEVEL, { disabled: true }).state;
+    const frozen = stepPlayerMovement(climbing, input({ climb: 1 }), TICK_DT, LEVEL, {
+      disabled: true,
+    }).state;
     expect(frozen.y).toBe(climbing.y);
   });
 });
@@ -127,7 +132,9 @@ describe('determinism', () => {
 
   it('ignores all input while disabled', () => {
     const start = createMotionState(10, 0, 0, 0);
-    const end = stepPlayerMovement(start, input({ moveX: 1, jump: true }), TICK_DT, LEVEL, { disabled: true });
+    const end = stepPlayerMovement(start, input({ moveX: 1, jump: true }), TICK_DT, LEVEL, {
+      disabled: true,
+    });
     expect(end.state.x).toBe(10);
     expect(end.state.grounded).toBe(true);
   });

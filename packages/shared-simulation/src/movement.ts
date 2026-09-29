@@ -74,7 +74,20 @@ function clampAxis(value: number): number {
 }
 
 export function createMotionState(x: number, y: number, z: number, floor: number): MotionState {
-  return { x, y, z, vx: 0, vy: 0, vz: 0, kx: 0, kz: 0, facing: 1, floor, grounded: true, climbing: null };
+  return {
+    x,
+    y,
+    z,
+    vx: 0,
+    vy: 0,
+    vz: 0,
+    kx: 0,
+    kz: 0,
+    facing: 1,
+    floor,
+    grounded: true,
+    climbing: null,
+  };
 }
 
 function floorById(level: LevelMetadata, id: string): FloorSegment {

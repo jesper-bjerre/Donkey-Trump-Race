@@ -47,7 +47,8 @@ export function validateLevelMetadata(level: LevelMetadata): ValidationResult {
   if (!floorIds.has(level.bossSpawn.floorId)) errors.push('boss floor not found');
   for (const box of level.itemBoxes) {
     if (!floorIds.has(box.floorId)) errors.push(`item box ${box.id} floor not found`);
-    if (box.x <= leftWallX || box.x >= rightFallEdgeX) errors.push(`item box ${box.id} out of bounds`);
+    if (box.x <= leftWallX || box.x >= rightFallEdgeX)
+      errors.push(`item box ${box.id} out of bounds`);
     if (box.z < zMin || box.z > zMax) errors.push(`item box ${box.id} z out of bounds`);
   }
   if (level.playerSpawns.length < 5) errors.push('level needs 5 player spawns');

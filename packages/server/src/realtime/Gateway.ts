@@ -71,7 +71,8 @@ export class RealtimeGateway {
     let lastRefill = Date.now();
 
     const close = (code: number, reason: string) => {
-      if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING) socket.close(code, reason);
+      if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING)
+        socket.close(code, reason);
     };
 
     const helloTimer = setTimeout(() => {
@@ -114,7 +115,9 @@ export class RealtimeGateway {
         close(CLOSE_CODES.payloadTooLarge, 'Payload too large');
         return;
       }
-      const raw = Array.isArray(data) ? Buffer.concat(data).toString('utf8') : Buffer.from(data as Buffer).toString('utf8');
+      const raw = Array.isArray(data)
+        ? Buffer.concat(data).toString('utf8')
+        : Buffer.from(data as Buffer).toString('utf8');
       const parsed = parseClientMessage(raw);
       if (!parsed.ok) {
         if (parsed.reason === 'too_large') {
@@ -123,7 +126,11 @@ export class RealtimeGateway {
           close(CLOSE_CODES.unauthenticated, 'Expected client.hello');
         } else {
           socket.send(
-            encodeServerMessage({ type: 'server.error', code: 'BAD_REQUEST', message: 'Invalid message' }),
+            encodeServerMessage({
+              type: 'server.error',
+              code: 'BAD_REQUEST',
+              message: 'Invalid message',
+            }),
           );
         }
         return;
@@ -138,7 +145,11 @@ export class RealtimeGateway {
         const claims = tokens.verify(message.roomToken);
         if (!claims) {
           socket.send(
-            encodeServerMessage({ type: 'server.error', code: 'TOKEN_INVALID', message: 'Session expired' }),
+            encodeServerMessage({
+              type: 'server.error',
+              code: 'TOKEN_INVALID',
+              message: 'Session expired',
+            }),
           );
           close(CLOSE_CODES.unauthenticated, 'Invalid token');
           return;

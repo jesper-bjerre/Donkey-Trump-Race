@@ -14,7 +14,12 @@ export const RescueObjective = {
    * Records every player that reached Motzfeldt this tick. Same-tick arrivals are
    * ordered by slot index so results never depend on iteration order.
    */
-  checkCompletion(level: LevelMetadata, players: PlayerSim[], tick: number, alreadyFinished: number): PlayerSim[] {
+  checkCompletion(
+    level: LevelMetadata,
+    players: PlayerSim[],
+    tick: number,
+    alreadyFinished: number,
+  ): PlayerSim[] {
     const arrivals = players
       .filter((p) => isActive(p) && RescueObjective.isInRescueZone(level, p))
       .sort((a, b) => a.info.slotIndex - b.info.slotIndex);

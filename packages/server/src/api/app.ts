@@ -49,7 +49,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     bodyLimit: 4096,
     genReqId: () => `req_${Math.random().toString(36).slice(2, 10)}`,
   });
-  const limiter = new FixedWindowRateLimiter(options.rateLimit?.limit ?? 30, options.rateLimit?.windowMs ?? 60_000);
+  const limiter = new FixedWindowRateLimiter(
+    options.rateLimit?.limit ?? 30,
+    options.rateLimit?.windowMs ?? 60_000,
+  );
 
   app.addHook('onSend', async (_request, reply, payload) => {
     for (const [name, value] of Object.entries(SECURITY_HEADERS)) reply.header(name, value);
@@ -100,7 +103,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   app.post<{ Params: { code: string } }>('/api/v1/rooms/:code/start', async (request, reply) => {
     const claims = requireClaims(request);
     const room = game.rooms.requireRoom(request.params.code);
-    if (claims.roomCode !== room.code || claims.role !== 'host') throw new GameError('TOKEN_FORBIDDEN');
+    if (claims.roomCode !== room.code || claims.role !== 'host')
+      throw new GameError('TOKEN_FORBIDDEN');
     return reply.status(200).send(game.startMatch(room.code, claims.playerId));
   });
 
@@ -112,12 +116,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
   const dist = options.clientDistDir;
   if (dist && existsSync(resolve(dist, 'index.html'))) {
-    await app.register(fastifyStatic, { root: dist, wildcard: false, maxAge: '1h' });
+    await app.register(fastifyStatic, { root: dist, maxAge: '1h' });
     app.setNotFoundHandler((request, reply) => {
-      if (request.method === 'GET' && !request.url.startsWith('/api/')) {
+      const path = request.url.split('?')[0] ?? '';
+      // SPA fallback only for page routes; missing assets must 404 rather than return HTML.
+      const looksLikeFile = /\.[a-z0-9]+$/i.test(path);
+      if (request.method === 'GET' && !path.startsWith('/api/') && !looksLikeFile) {
         return reply.header('cache-control', 'no-cache').sendFile('index.html');
       }
-      return sendError(reply, 'BAD_REQUEST', request.id);
+      return reply.status(404).type('text/plain').send('Not found');
     });
   }
 

@@ -15,8 +15,11 @@ describe('item definitions', () => {
   });
 
   it('validates effect descriptors', () => {
-    for (const def of Object.values(ITEM_DEFINITIONS)) expect(validateItemEffect(def.effect)).toBe(true);
-    expect(validateItemEffect({ effectType: 'TELEPORT', category: 'selfBenefit', durationMs: 1 })).toBe(false);
+    for (const def of Object.values(ITEM_DEFINITIONS))
+      expect(validateItemEffect(def.effect)).toBe(true);
+    expect(
+      validateItemEffect({ effectType: 'TELEPORT', category: 'selfBenefit', durationMs: 1 }),
+    ).toBe(false);
   });
 
   it('places pickup volumes inside the playable bounds', () => {

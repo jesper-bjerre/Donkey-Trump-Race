@@ -22,7 +22,13 @@ function makeMatch(count = 5, countdownMs = 0) {
     color: PLAYER_COLOR_IDS[i]!,
     connected: true,
   }));
-  const match = new MatchRunner({ matchId: 'm_test', level: LEVEL, players, seed: 1234, countdownMs });
+  const match = new MatchRunner({
+    matchId: 'm_test',
+    level: LEVEL,
+    players,
+    seed: 1234,
+    countdownMs,
+  });
   let seq = 0;
   const send = (id: string, input: Partial<MovementInput>) =>
     match.submitInput(id, { seq: ++seq, moveX: 0, moveZ: 0, climb: 0, jump: false, ...input });
@@ -238,7 +244,8 @@ describe('rescue and results', () => {
       const { match, send } = makeMatch(2, 500);
       for (let t = 0; t < 1200; t++) {
         if (t % 2 === 0) {
-          for (const id of ['p0', 'p1']) send(id, autopilotInput(LEVEL, match.debugPlayer(id)!.motion));
+          for (const id of ['p0', 'p1'])
+            send(id, autopilotInput(LEVEL, match.debugPlayer(id)!.motion));
         }
         match.advanceTick();
       }

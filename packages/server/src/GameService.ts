@@ -13,7 +13,8 @@ import {
 import { TICK_MS } from '@dtr/shared-simulation';
 import type { RoomTokenService } from './auth/roomTokens.js';
 import { MatchRunner } from './game/MatchRunner.js';
-import { RoomManager, type PlayerSlot, type Room } from './room/RoomManager.js';
+import type { RoomManager } from './room/RoomManager.js';
+import { type PlayerSlot, type Room } from './room/RoomManager.js';
 
 const TOKEN_REFRESH_MS = 10 * 60 * 1000;
 const SWEEP_INTERVAL_MS = 5000;
@@ -156,7 +157,11 @@ export class GameService {
     this.broadcastLobby(room);
     const match = this.matches.get(room.code);
     if (match) {
-      this.sendTo(connection, { type: 'server.matchStart', matchId: match.matchId, mapId: match.level.id });
+      this.sendTo(connection, {
+        type: 'server.matchStart',
+        matchId: match.matchId,
+        mapId: match.level.id,
+      });
       this.sendTo(connection, { type: 'server.snapshot', snapshot: match.snapshot() });
     }
     return true;
@@ -191,7 +196,11 @@ export class GameService {
         match?.requestUseItem(connection.playerId);
         break;
       case 'client.ping':
-        this.sendTo(connection, { type: 'server.pong', t: message.t, serverTimeMs: match?.nowMs ?? 0 });
+        this.sendTo(connection, {
+          type: 'server.pong',
+          t: message.t,
+          serverTimeMs: match?.nowMs ?? 0,
+        });
         break;
       case 'client.hello':
         break;
@@ -205,7 +214,8 @@ export class GameService {
     for (let i = 0; i < ticks; i++) {
       for (const [code, match] of this.matches) {
         match.advanceTick();
-        for (const event of match.drainEvents()) this.broadcast(code, { type: 'server.event', event });
+        for (const event of match.drainEvents())
+          this.broadcast(code, { type: 'server.event', event });
         if (match.shouldBroadcastSnapshot()) {
           this.broadcast(code, { type: 'server.snapshot', snapshot: match.snapshot() });
         }
@@ -255,7 +265,11 @@ export class GameService {
       finishOrder: result.finishOrder,
       highlights: result.highlights,
     });
-    this.log('match_end', { room: code, match: result.matchId, finishers: result.finishOrder.length });
+    this.log('match_end', {
+      room: code,
+      match: result.matchId,
+      finishers: result.finishOrder.length,
+    });
     this.rooms.endMatch(code);
     const room = this.rooms.getRoom(code);
     if (room) this.broadcastLobby(room);
@@ -281,7 +295,11 @@ export class GameService {
 
   private refreshToken(connection: Connection, room: Room, slot: PlayerSlot): void {
     const session = this.session(room, slot);
-    this.sendTo(connection, { type: 'server.session', roomToken: session.roomToken, expiresAt: session.expiresAt });
+    this.sendTo(connection, {
+      type: 'server.session',
+      roomToken: session.roomToken,
+      expiresAt: session.expiresAt,
+    });
   }
 
   private broadcastLobby(room: Room): void {

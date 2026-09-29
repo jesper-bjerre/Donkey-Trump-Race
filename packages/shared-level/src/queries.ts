@@ -54,6 +54,7 @@ export function computeProgress(level: LevelMetadata, floorIndex: number, x: num
   const floor = level.floors[floorIndex];
   if (!floor) return 0;
   const width = level.bounds.rightFallEdgeX - level.bounds.leftWallX;
-  const along = floor.runDirection > 0 ? x - level.bounds.leftWallX : level.bounds.rightFallEdgeX - x;
+  const along =
+    floor.runDirection > 0 ? x - level.bounds.leftWallX : level.bounds.rightFallEdgeX - x;
   return floorIndex * width + Math.max(0, Math.min(width, along));
 }
