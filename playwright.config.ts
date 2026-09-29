@@ -12,9 +12,24 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'retain-on-failure',
-    launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader'] },
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Software WebGL so the 3D scene renders on GPU-less CI runners.
+        launchOptions: { args: ['--use-gl=angle', '--use-angle=swiftshader'] },
+      },
+    },
+    {
+      name: 'firefox',
+      use: {
+        ...devices['Desktop Firefox'],
+        launchOptions: { firefoxUserPrefs: { 'webgl.force-enabled': true } },
+      },
+    },
+  ],
   webServer: {
     command: 'node packages/server/dist/main.js',
     url: `http://127.0.0.1:${PORT}/healthz`,

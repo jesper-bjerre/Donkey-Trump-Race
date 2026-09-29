@@ -67,6 +67,12 @@ describe('roster announcements', () => {
       'LarsFan left the room.',
     );
     expect(describeRosterChange(before, before, 'p_0')).toBeNull();
+    const joining = [...before, lobbyPlayer(2, { connected: false })];
+    const connected = [...before, lobbyPlayer(2)];
+    expect(describeRosterChange(joining, connected, 'p_0', new Set(['p_0', 'p_1']))).toBeNull();
+    expect(describeRosterChange(joining, connected, 'p_0', new Set(['p_2']))).toBe(
+      'Jumpman Løkke is back.',
+    );
   });
 });
 
