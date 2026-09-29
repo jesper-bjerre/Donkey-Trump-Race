@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { ITEM_DEFINITIONS } from '@dtr/shared-items';
+import { TELEMETRY_CATEGORIES } from '../../privacy/telemetryCategories.js';
 
 interface Props {
   onClose: () => void;
@@ -85,8 +86,15 @@ export function HelpPrivacyModal({ onClose }: Props) {
         <p>
           Guest play only: we ask for a nickname and room code, nothing else. No accounts, passwords
           or profiles. Your room token is kept in memory only. Rooms and nicknames are deleted when
-          the room expires. Basic telemetry (match events, never your nickname) may be collected
-          during the beta.
+          the room expires. During the beta we collect anonymous telemetry — never your nickname:
+        </p>
+        <ul>
+          {TELEMETRY_CATEGORIES.map((category) => (
+            <li key={category}>{category}</li>
+          ))}
+        </ul>
+        <p>
+          <a href="/privacy">Privacy notice and data requests</a>
         </p>
         <p className="muted">
           A parody game. Characters are caricatures and not endorsed by the people they depict.

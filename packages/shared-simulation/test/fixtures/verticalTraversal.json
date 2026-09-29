@@ -1,0 +1,48 @@
+{
+  "name": "verticalTraversal",
+  "description": "Committed command sequence: run to ladder l0, climb to floor 1, run back to ladder l1, climb to floor 2.",
+  "start": {
+    "x": 3,
+    "y": 0,
+    "z": 0,
+    "floor": 0
+  },
+  "steps": [
+    {
+      "ticks": 330,
+      "input": {
+        "moveX": 1,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": false
+      }
+    },
+    {
+      "ticks": 90,
+      "input": {
+        "moveX": 0,
+        "moveZ": 0,
+        "climb": 1,
+        "jump": false
+      }
+    },
+    {
+      "ticks": 320,
+      "input": {
+        "moveX": -1,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": false
+      }
+    },
+    {
+      "ticks": 90,
+      "input": {
+        "moveX": 0,
+        "moveZ": 0,
+        "climb": 1,
+        "jump": false
+      }
+    }
+  ]
+}

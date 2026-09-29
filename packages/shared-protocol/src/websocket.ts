@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { PLAYER_COLOR_IDS } from './colors.js';
 import { ERROR_CODES } from './errors.js';
-import { RoleSchema, RoomStateSchema } from './rest.js';
+import { MAX_ROOM_TOKEN_LENGTH } from './validation.js';
+import { LobbyPlayerSchema, RoomStateSchema } from './rest.js';
 import { AuthoritativeSnapshotSchema, FinishEntrySchema, ItemTypeSchema } from './snapshot.js';
 
 export const PROTOCOL_VERSION = 1;
@@ -37,33 +38,39 @@ export const ClientInputCommandSchema = z.object({
 });
 export type ClientInputCommand = z.infer<typeof ClientInputCommandSchema>;
 
+export const clientInputMessageSchema = z.object({
+  type: z.literal('client.input'),
+  protocolVersion: v,
+  input: ClientInputCommandSchema,
+});
+export const itemUseCommandSchema = z.object({
+  type: z.literal('client.useItem'),
+  protocolVersion: v,
+});
+
 export const ClientMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('client.hello'),
     protocolVersion: v,
-    roomToken: z.string().max(1024),
+    roomToken: z.string().max(MAX_ROOM_TOKEN_LENGTH),
   }),
   z.object({ type: z.literal('client.ready'), protocolVersion: v, ready: z.boolean() }),
-  z.object({
-    type: z.literal('client.input'),
-    protocolVersion: v,
-    input: ClientInputCommandSchema,
-  }),
-  z.object({ type: z.literal('client.useItem'), protocolVersion: v }),
+  clientInputMessageSchema,
+  itemUseCommandSchema,
   z.object({ type: z.literal('client.ping'), protocolVersion: v, t: z.number().finite() }),
+  /** Client prediction reports a reconciliation above RECONCILE_THRESHOLD (telemetry only). */
+  z.object({
+    type: z.literal('client.desyncReport'),
+    protocolVersion: v,
+    tick: z
+      .number()
+      .int()
+      .min(0)
+      .max(2 ** 31),
+    correctionDistance: z.number().finite().min(0).max(1000),
+  }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
-
-export const LobbyPlayerSchema = z.object({
-  id: z.string(),
-  slotIndex: z.number().int(),
-  nickname: z.string(),
-  color: z.enum(PLAYER_COLOR_IDS),
-  role: RoleSchema,
-  ready: z.boolean(),
-  connected: z.boolean(),
-});
-export type LobbyPlayer = z.infer<typeof LobbyPlayerSchema>;
 
 export const GameEventSchema = z.object({
   kind: z.enum([
@@ -88,6 +95,9 @@ export const MatchHighlightsSchema = z.object({
   falls: z.number().int(),
   shoves: z.number().int(),
   itemUses: z.number().int(),
+  disconnects: z.number().int(),
+  /** Race time of the winner, null when nobody reached Motzfeldt. */
+  fastestRescueMs: z.number().nullable(),
 });
 export type MatchHighlights = z.infer<typeof MatchHighlightsSchema>;
 
@@ -134,6 +144,10 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     matchId: z.string(),
     finishOrder: z.array(FinishEntrySchema),
     highlights: MatchHighlightsSchema,
+    /** interrupted: the server hit an unrecoverable error and ended the match early. */
+    outcome: z.enum(['completed', 'interrupted']),
+    /** Whether the host may start a rematch with the same room right away. */
+    canReplay: z.boolean(),
   }),
   z.object({
     type: z.literal('server.error'),
@@ -215,4 +229,24 @@ export function encodeServerMessage(body: ServerMessageBody): string {
 
 export function encodeClientMessage(body: ClientMessageBody): string {
   return JSON.stringify({ ...body, protocolVersion: PROTOCOL_VERSION });
+}
+
+export type WebSocketMessage = ClientMessage | ServerMessage;
+export const WebSocketMessageSchema = z.union([ClientMessageSchema, ServerMessageSchema]);
+
+export function validateWebSocketMessage(value: unknown): WebSocketMessage | null {
+  const parsed = WebSocketMessageSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+/** Parses either direction of the protocol; used by tools and compatibility tests. */
+export function parseWebSocketMessage(raw: string): ParseResult<WebSocketMessage> {
+  let json: unknown;
+  try {
+    json = JSON.parse(raw);
+  } catch {
+    return { ok: false, reason: 'invalid_json' };
+  }
+  const message = validateWebSocketMessage(json);
+  return message ? { ok: true, message } : { ok: false, reason: 'invalid_schema' };
 }

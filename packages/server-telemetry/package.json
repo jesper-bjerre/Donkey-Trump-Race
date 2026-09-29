@@ -1,0 +1,19 @@
+{
+  "name": "@dtr/server-telemetry",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.13.3",
+    "@azure/keyvault-secrets": "^4.11.2",
+    "@azure/storage-blob": "^12.34.0",
+    "@dtr/shared-protocol": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}

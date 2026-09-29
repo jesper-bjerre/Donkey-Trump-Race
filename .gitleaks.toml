@@ -1,0 +1,12 @@
+# Secret scanning config (security.yml "Secret scan"). Default rules plus a narrow allowlist
+# for deliberate, non-secret test placeholders. Never allowlist whole directories.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented test placeholders"
+regexTarget = "match"
+regexes = [
+  '''test-secret-placeholder-0123456789''',
+  '''eyJzYW1wbGUiOnRydWV9\.c2lnbmF0dXJl''',
+]

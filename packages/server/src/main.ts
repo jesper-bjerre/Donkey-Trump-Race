@@ -1,12 +1,17 @@
 import { loadConfig } from './config.js';
 import { createServer } from './server.js';
 
-const config = loadConfig();
+const config = await loadConfig();
 const server = await createServer(config, { logger: true });
 
 await server.app.listen({ port: config.port, host: config.host });
 server.app.log.info(
-  { allowSolo: config.allowSolo, servingClient: config.clientDistDir !== null },
+  {
+    environment: config.environment,
+    allowSolo: config.allowSolo,
+    servingClient: config.clientDistDir !== null,
+    telemetrySink: config.telemetry.sink,
+  },
   'Donkey Trump Race server ready',
 );
 

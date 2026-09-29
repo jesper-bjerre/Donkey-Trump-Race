@@ -60,7 +60,13 @@ export class MatchRunner {
   private readonly items: ItemSystem;
   private readonly shoves = new PlayerShoveSystem();
   private readonly raceStartsAtMs: number;
-  private readonly stats: MatchStats = { barrelHits: 0, falls: 0, shoves: 0, itemUses: 0 };
+  private readonly stats: MatchStats = {
+    barrelHits: 0,
+    falls: 0,
+    shoves: 0,
+    itemUses: 0,
+    disconnects: 0,
+  };
   private readonly finishOrder: FinishEntry[] = [];
   private pendingEvents: GameEvent[] = [];
   private tickCount = 0;
@@ -118,6 +124,7 @@ export class MatchRunner {
   setConnected(playerId: string, connected: boolean): void {
     const player = this.find(playerId);
     if (!player) return;
+    if (!connected && player.info.connected && !this.isFinished()) this.stats.disconnects++;
     player.info.connected = connected;
     if (!connected) {
       player.inputQueue = [];
@@ -208,11 +215,25 @@ export class MatchRunner {
     };
   }
 
+  /** Match time (ms) when the countdown ends and racing begins. */
+  get raceStartMs(): number {
+    return this.raceStartsAtMs;
+  }
+
+  /** Players in the match (removed players excluded). */
+  get playerCount(): number {
+    return this.players.filter((p) => !p.removed).length;
+  }
+
   result(): MatchResult {
+    const first = this.finishOrder[0];
     return {
       matchId: this.matchId,
       finishOrder: [...this.finishOrder],
-      highlights: { ...this.stats },
+      highlights: {
+        ...this.stats,
+        fastestRescueMs: first ? first.serverTimeMs - this.raceStartsAtMs : null,
+      },
     };
   }
 

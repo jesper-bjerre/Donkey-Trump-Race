@@ -1,0 +1,10 @@
+{
+  "statusCode": 400,
+  "error": {
+    "code": "INVALID_ROOM_CODE",
+    "message": "Room codes are 5 characters, like A7K2Q.",
+    "recoveryAction": "retry-room-code"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

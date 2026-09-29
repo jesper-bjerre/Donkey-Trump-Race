@@ -1,0 +1,7 @@
+{
+  "nickname": "SmokeTest",
+  "expectedTitle": "Donkey Trump Race",
+  "expectedService": "donkey-trump-race-server",
+  "websocketTimeoutMs": 5000,
+  "requiredHeaders": ["content-security-policy", "x-content-type-options", "x-frame-options"]
+}

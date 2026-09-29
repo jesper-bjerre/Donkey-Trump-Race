@@ -1,4 +1,5 @@
 import { getFloorById, type LevelMetadata } from '@dtr/shared-level';
+import { orderRescueCandidates } from '@dtr/shared-simulation';
 import type { PlayerSim } from '../types.js';
 import { isActive } from './status.js';
 
@@ -20,13 +21,17 @@ export const RescueObjective = {
     tick: number,
     alreadyFinished: number,
   ): PlayerSim[] {
-    const arrivals = players
-      .filter((p) => isActive(p) && RescueObjective.isInRescueZone(level, p))
-      .sort((a, b) => a.info.slotIndex - b.info.slotIndex);
-    arrivals.forEach((p, i) => {
-      p.finishRank = alreadyFinished + i + 1;
-      p.finishTick = tick;
+    const arrivals = players.filter((p) => isActive(p) && RescueObjective.isInRescueZone(level, p));
+    const bySlot = new Map(arrivals.map((p) => [p.info.slotIndex, p]));
+    const ranked = orderRescueCandidates(
+      arrivals.map((p) => ({ playerSlot: p.info.slotIndex, serverTick: tick })),
+      alreadyFinished,
+    );
+    return ranked.map((r) => {
+      const player = bySlot.get(r.playerSlot)!;
+      player.finishRank = r.rank;
+      player.finishTick = r.serverTick;
+      return player;
     });
-    return arrivals;
   },
 };

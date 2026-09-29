@@ -1,0 +1,21 @@
+{
+  "name": "rightEdgeFall",
+  "description": "Running right off the end of floor 1 confirms a fall below the fall depth.",
+  "start": {
+    "x": 37,
+    "y": 4,
+    "z": -2,
+    "floor": 1
+  },
+  "steps": [
+    {
+      "ticks": 90,
+      "input": {
+        "moveX": 1,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": false
+      }
+    }
+  ]
+}

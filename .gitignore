@@ -6,3 +6,15 @@ playwright-report/
 *.log
 .env
 .env.*
+.data/
+beta-reports/
+artifacts/
+soak-summary.json
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+infra/azure/env/*.tfvars
+infra/azure/env/*.backend.hcl

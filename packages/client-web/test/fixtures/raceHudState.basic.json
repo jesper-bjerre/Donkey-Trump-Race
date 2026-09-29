@@ -1,0 +1,46 @@
+{
+  "phase": "racing",
+  "countdownMs": 0,
+  "raceEndsInMs": null,
+  "position": 2,
+  "playerCount": 3,
+  "floor": 2,
+  "floorCount": 6,
+  "rescueProgressPct": 41,
+  "statusLine": "Mette shoved you!",
+  "heldItem": "tweetStorm",
+  "penaltyMs": 0,
+  "penaltyKind": null,
+  "speedBoostMs": 0,
+  "shieldMs": 0,
+  "finishRank": null,
+  "latencyMs": 48,
+  "snapshotAgeMs": 60,
+  "events": [{ "id": 1, "text": "🤜 Mette shoved You!" }],
+  "ranking": [
+    {
+      "id": "p_1",
+      "nickname": "Mette",
+      "color": "blue",
+      "slotIndex": 1,
+      "finishRank": null,
+      "isLocal": false
+    },
+    {
+      "id": "p_0",
+      "nickname": "LarsFan",
+      "color": "red",
+      "slotIndex": 0,
+      "finishRank": null,
+      "isLocal": true
+    },
+    {
+      "id": "p_2",
+      "nickname": "Jumpman Løkke",
+      "color": "green",
+      "slotIndex": 2,
+      "finishRank": null,
+      "isLocal": false
+    }
+  ]
+}

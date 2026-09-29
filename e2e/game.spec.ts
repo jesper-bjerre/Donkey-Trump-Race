@@ -1,13 +1,5 @@
-import { expect, test, type Page } from '@playwright/test';
-
-async function createRoom(page: Page, nickname: string): Promise<string> {
-  await page.goto('/');
-  await page.getByLabel('Nickname').fill(nickname);
-  await page.getByRole('button', { name: 'Create room' }).click();
-  const code = page.locator('output.room-code');
-  await expect(code).toHaveText(/^[A-Z2-9]{5}$/);
-  return (await code.textContent()) ?? '';
-}
+import { expect, test } from '@playwright/test';
+import { createRoom } from './helpers.js';
 
 test('landing page shows the title and entry form', async ({ page }) => {
   await page.goto('/');

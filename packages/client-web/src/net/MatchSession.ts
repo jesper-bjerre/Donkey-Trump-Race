@@ -2,10 +2,12 @@ import type { LevelMetadata } from '@dtr/shared-level';
 import type { AuthoritativeSnapshot, GameEvent, PlayerSnapshot } from '@dtr/shared-protocol';
 import type { GameSocket } from './GameSocket.js';
 import { ServerClock, SnapshotBuffer } from './interpolation.js';
-import { LocalPredictor, type PredictionContext } from './prediction.js';
+import { DESYNC_REPORT_THRESHOLD, LocalPredictor, type PredictionContext } from './prediction.js';
 
 const TELEPORT_DISTANCE = 4;
 const MAX_EVENTS = 6;
+/** Client-side throttle for desync reports (the server also throttles). */
+const DESYNC_REPORT_INTERVAL_MS = 1000;
 
 export interface FeedEvent extends GameEvent {
   id: number;
@@ -19,6 +21,7 @@ export class MatchSession {
   readonly predictor: LocalPredictor;
   events: FeedEvent[] = [];
   private eventId = 0;
+  private lastDesyncReportAt = -Infinity;
   private unsubscribe: () => void;
 
   constructor(
@@ -84,8 +87,24 @@ export class MatchSession {
     if (!predicted || teleported || me.finishRank !== null) {
       this.predictor.reset(me);
     } else {
-      this.predictor.reconcile(me, this.predictionContext(me, snapshot, snapshot.serverTimeMs));
+      const { distance } = this.predictor.reconcile(
+        me,
+        this.predictionContext(me, snapshot, snapshot.serverTimeMs),
+      );
+      this.reportDesync(distance, snapshot.tick);
     }
+  }
+
+  private reportDesync(distance: number, tick: number): void {
+    if (distance < DESYNC_REPORT_THRESHOLD) return;
+    const now = performance.now();
+    if (now - this.lastDesyncReportAt < DESYNC_REPORT_INTERVAL_MS) return;
+    this.lastDesyncReportAt = now;
+    this.socket.send({
+      type: 'client.desyncReport',
+      tick,
+      correctionDistance: Math.min(1000, Math.round(distance * 1000) / 1000),
+    });
   }
 
   private onEvent(event: GameEvent): void {

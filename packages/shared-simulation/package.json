@@ -11,5 +11,8 @@
   },
   "dependencies": {
     "@dtr/shared-level": "workspace:*"
+  },
+  "devDependencies": {
+    "@dtr/shared-items": "workspace:*"
   }
 }

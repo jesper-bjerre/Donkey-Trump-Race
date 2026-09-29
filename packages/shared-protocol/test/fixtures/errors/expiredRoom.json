@@ -1,0 +1,10 @@
+{
+  "statusCode": 410,
+  "error": {
+    "code": "ROOM_EXPIRED",
+    "message": "That room has expired. Create a new room to play.",
+    "recoveryAction": "create-new-room"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

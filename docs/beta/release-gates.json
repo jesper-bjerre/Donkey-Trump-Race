@@ -1,0 +1,8 @@
+{
+  "legalIpReview": {
+    "status": "pending",
+    "notes": "Parody names and likenesses must pass legal/IP review before any public release."
+  },
+  "privacyReview": { "status": "pending" },
+  "accessibilityReview": { "status": "pending" }
+}

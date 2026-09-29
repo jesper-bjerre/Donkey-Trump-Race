@@ -58,4 +58,5 @@ export interface MatchStats {
   falls: number;
   shoves: number;
   itemUses: number;
+  disconnects: number;
 }

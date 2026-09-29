@@ -1,0 +1,16 @@
+// Matches with at least one major prediction correction, over matches started, per hour.
+let starts = ContainerAppConsoleLogs_CL
+    | extend entry = parse_json(Log_s)
+    | where tostring(entry.msg) == "telemetry" and tostring(entry.event) == "match_start"
+    | summarize started = dcount(tostring(entry.matchId)) by bin(TimeGenerated, 1h);
+let desyncs = ContainerAppConsoleLogs_CL
+    | extend entry = parse_json(Log_s)
+    | where tostring(entry.msg) == "telemetry" and tostring(entry.event) == "desync_correction"
+    | where tostring(entry.severity) == "major"
+    | summarize desyncMatches = dcount(tostring(entry.matchId)) by bin(TimeGenerated, 1h);
+starts
+| join kind=leftouter desyncs on TimeGenerated
+| extend desyncMatches = coalesce(desyncMatches, 0)
+| extend desyncRate = iff(started == 0, real(null), round(todouble(desyncMatches) / started, 3))
+| project TimeGenerated, started, desyncMatches, desyncRate
+| order by TimeGenerated asc

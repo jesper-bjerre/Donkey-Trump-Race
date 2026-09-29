@@ -1,0 +1,10 @@
+# Copy to env/production.tfvars (git-ignored) and fill in. No secrets belong here:
+# signing keys and salts are generated into Key Vault by Terraform.
+environment         = "production"
+location            = "<azure-region>"          # e.g. westeurope
+resource_group_name = "rg-dtr-production"            # created by infra/azure/bootstrap
+container_image     = ""                        # set by the deploy workflow (-var container_image=...)
+alert_email         = "<ops-email-or-empty>"
+enable_front_door   = false
+key_vault_purge_protection = true
+# extra_allowed_origins = ["https://<custom-domain>"]

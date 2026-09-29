@@ -1,0 +1,22 @@
+[
+  {
+    "playerSlot": 4,
+    "serverTick": 5399,
+    "rank": 1
+  },
+  {
+    "playerSlot": 1,
+    "serverTick": 5400,
+    "rank": 2
+  },
+  {
+    "playerSlot": 3,
+    "serverTick": 5400,
+    "rank": 3
+  },
+  {
+    "playerSlot": 0,
+    "serverTick": 5401,
+    "rank": 4
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "effectType": "SELF_SPEED_BOOST",
+  "category": "selfBenefit",
+  "multiplier": 1.5,
+  "durationMs": 3000
+}

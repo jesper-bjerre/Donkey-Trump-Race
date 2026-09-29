@@ -1,0 +1,10 @@
+{
+  "title": "Donkey Trump Race",
+  "health": { "path": "/healthz", "service": "donkey-trump-race-server", "status": "ok" },
+  "pages": [
+    { "path": "/", "heading": "Donkey Trump Race" },
+    { "path": "/privacy", "heading": "Privacy notice" },
+    { "path": "/rooms/A7K2Q", "heading": "Donkey Trump Race", "roomCode": "A7K2Q" }
+  ],
+  "sceneObjects": ["boss.trumpPlaceholder", "mvp.leftWall", "mvp.rescuePoint", "mvp.title"]
+}

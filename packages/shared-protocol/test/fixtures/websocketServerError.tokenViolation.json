@@ -1,0 +1,6 @@
+{
+  "type": "server.error",
+  "protocolVersion": 1,
+  "code": "TOKEN_INVALID",
+  "message": "Your session has expired. Please rejoin the room."
+}

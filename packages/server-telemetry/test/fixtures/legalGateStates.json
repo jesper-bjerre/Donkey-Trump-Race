@@ -1,0 +1,14 @@
+{
+  "legalIpReview": {
+    "status": "pending",
+    "notes": "Parody names and likenesses awaiting review."
+  },
+  "privacyReview": {
+    "status": "approved",
+    "reviewedAt": "2026-12-01"
+  },
+  "accessibilityReview": {
+    "status": "approved",
+    "reviewedAt": "2026-12-03"
+  }
+}

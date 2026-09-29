@@ -120,6 +120,7 @@ describe('error catalog', () => {
     expect(json).toEqual({
       statusCode: 409,
       requestId: 'req-1',
+      correlationId: 'req-1',
       error: { code: 'ROOM_FULL', message: expect.any(String), recoveryAction: 'retry-later' },
     });
     expect(JSON.stringify(json)).not.toMatch(/stack/i);

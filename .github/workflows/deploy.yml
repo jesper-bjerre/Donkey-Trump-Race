@@ -1,0 +1,183 @@
+name: Deploy
+
+# main -> dev automatically; staging and production only on manual dispatch.
+# Production additionally waits for the approval rule on the "production" GitHub Environment.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target environment
+        type: choice
+        options: [dev, staging, production]
+        default: dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'dev' }}
+  cancel-in-progress: false
+
+env:
+  IMAGE_TAG: ${{ github.sha }}
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Format check
+        run: pnpm format:check
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Unit tests
+        run: pnpm test:unit
+      - name: Integration tests
+        run: pnpm test:integration
+      - name: Build
+        run: pnpm build
+
+  build-image:
+    name: Build and scan image
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Build image
+        run: docker build -t "donkey-trump-race:${IMAGE_TAG}" .
+      - name: Container scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: donkey-trump-race:${{ env.IMAGE_TAG }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Save image
+        run: |
+          mkdir -p image
+          docker save "donkey-trump-race:${IMAGE_TAG}" | gzip > image/image.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-${{ env.IMAGE_TAG }}
+          path: image/image.tar.gz
+          retention-days: 7
+
+  deploy-dev:
+    name: Deploy dev
+    needs: build-image
+    if: github.event_name == 'push' || inputs.environment == 'dev'
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      app-url: ${{ steps.deploy.outputs.app-url }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-${{ env.IMAGE_TAG }}
+          path: ${{ runner.temp }}/image
+      - id: deploy
+        uses: ./.github/actions/deploy-environment
+        with:
+          environment: dev
+          image-tag: ${{ env.IMAGE_TAG }}
+          azure-client-id: ${{ vars.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          location: ${{ vars.AZURE_LOCATION }}
+          tfstate-resource-group: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+          tfstate-storage-account: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+          alert-email: ${{ vars.ALERT_EMAIL }}
+
+  deploy-staging:
+    name: Deploy staging
+    needs: build-image
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-${{ env.IMAGE_TAG }}
+          path: ${{ runner.temp }}/image
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: staging
+          image-tag: ${{ env.IMAGE_TAG }}
+          azure-client-id: ${{ vars.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          location: ${{ vars.AZURE_LOCATION }}
+          tfstate-resource-group: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+          tfstate-storage-account: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+          alert-email: ${{ vars.ALERT_EMAIL }}
+
+  deploy-production:
+    name: Deploy production
+    needs: build-image
+    # Only reachable by manual dispatch; the "production" environment's required reviewers
+    # must approve before this job gets Azure credentials.
+    if: github.event_name == 'workflow_dispatch' && inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4.4.0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: image-${{ env.IMAGE_TAG }}
+          path: ${{ runner.temp }}/image
+      - uses: ./.github/actions/deploy-environment
+        with:
+          environment: production
+          image-tag: ${{ env.IMAGE_TAG }}
+          azure-client-id: ${{ vars.AZURE_CLIENT_ID }}
+          azure-tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          azure-subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          resource-group: ${{ vars.AZURE_RESOURCE_GROUP }}
+          location: ${{ vars.AZURE_LOCATION }}
+          tfstate-resource-group: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+          tfstate-storage-account: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+          alert-email: ${{ vars.ALERT_EMAIL }}

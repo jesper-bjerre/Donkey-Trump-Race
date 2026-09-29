@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { computeProgress, getFloorById, type LevelMetadata } from '@dtr/shared-level';
 import { TICKS_PER_INPUT, TICK_RATE } from '@dtr/shared-simulation';
 import { RaceHUD, type HudState } from '../components/RaceHUD.js';
 import { cameraDirection, KeyboardController, mapKeysToInput } from '../input/keyboard.js';
@@ -9,6 +10,15 @@ import { GameRenderer, type RenderPlayer } from '../render/GameRenderer.js';
 
 const INPUT_INTERVAL_S = TICKS_PER_INPUT / TICK_RATE;
 const HUD_INTERVAL_MS = 100;
+/** How long a "you were shoved" style status stays on screen. */
+const STATUS_LINE_MS = 2000;
+
+/** Progress at Motzfeldt's rescue zone, used as 100 %. */
+export function rescueProgressPct(level: LevelMetadata, progress: number): number {
+  const zone = level.rescueZone;
+  const goal = computeProgress(level, getFloorById(level, zone.floorId).index, zone.minX);
+  return goal > 0 ? Math.max(0, Math.min(100, Math.round((progress / goal) * 100))) : 0;
+}
 
 interface Props {
   match: MatchSession;
@@ -136,6 +146,12 @@ function buildHud(match: MatchSession, serverNow: number): HudState {
     playerCount: ranking.length,
     floor: me ? me.floor : 0,
     floorCount: match.level.floors.length,
+    rescueProgressPct: me
+      ? me.finishRank !== null
+        ? 100
+        : rescueProgressPct(match.level, me.progress)
+      : 0,
+    statusLine: statusLine(match),
     heldItem: me?.heldItem ?? null,
     penaltyMs: me ? Math.max(0, me.movementDisabledUntilMs - serverNow) : 0,
     penaltyKind: me?.fallPenalty ? 'fall' : me?.knockedDown ? 'knockdown' : null,
@@ -154,6 +170,20 @@ function buildHud(match: MatchSession, serverNow: number): HudState {
       isLocal: p.id === match.localPlayerId,
     })),
   };
+}
+
+/** Recent events that happened *to* the local player, as a short status line. */
+function statusLine(match: MatchSession): string | null {
+  const now = performance.now();
+  const recent = match.events.find(
+    (e) =>
+      now - e.receivedAt < STATUS_LINE_MS &&
+      ((e.kind === 'shove' && e.targetId === match.localPlayerId) ||
+        (e.kind === 'itemUse' && e.item === 'tweetStorm' && e.targetId === match.localPlayerId)),
+  );
+  if (!recent) return null;
+  const who = match.playerName(recent.playerId);
+  return recent.kind === 'shove' ? `${who} shoved you!` : `${who} hit you with a Tweet Storm!`;
 }
 
 function describeEvent(match: MatchSession, event: MatchSession['events'][number]): string {

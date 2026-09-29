@@ -1,0 +1,23 @@
+{
+  "name": "rescueOrdering",
+  "description": "Four players reach Motzfeldt within three ticks; two arrive on the same tick.",
+  "alreadyFinished": 0,
+  "candidates": [
+    {
+      "playerSlot": 3,
+      "serverTick": 5400
+    },
+    {
+      "playerSlot": 1,
+      "serverTick": 5400
+    },
+    {
+      "playerSlot": 0,
+      "serverTick": 5401
+    },
+    {
+      "playerSlot": 4,
+      "serverTick": 5399
+    }
+  ]
+}

@@ -1,8 +1,38 @@
 import { defineConfig } from 'vitest/config';
 
+const domOnly = ['**/*.dom.test.ts'];
+const nodeTests = [
+  'packages/*/src/**/*.test.ts',
+  'packages/*/test/**/*.test.ts',
+  'scripts/**/*.test.ts',
+];
+const integrationTests = ['**/*.int.test.ts'];
+
 export default defineConfig({
   test: {
-    include: ['packages/*/src/**/*.test.ts', 'packages/*/test/**/*.test.ts'],
-    environment: 'node',
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          include: nodeTests,
+          exclude: [...integrationTests, ...domOnly],
+          environment: 'node',
+        },
+      },
+      {
+        extends: true,
+        test: { name: 'integration', include: integrationTests, environment: 'node' },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'dom',
+          include: ['packages/client-web/**/*.test.tsx', 'packages/client-web/**/*.dom.test.ts'],
+          environment: 'jsdom',
+          setupFiles: ['packages/client-web/test/setup-dom.ts'],
+        },
+      },
+    ],
   },
 });

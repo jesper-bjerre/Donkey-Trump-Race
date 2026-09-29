@@ -1,0 +1,220 @@
+{
+  "id": "mvp-tower",
+  "name": "Christiansborg Tower",
+  "bounds": {
+    "leftWallX": 0,
+    "rightFallEdgeX": 40,
+    "zMin": -2.5,
+    "zMax": 2.5
+  },
+  "floors": [
+    {
+      "id": "f0",
+      "index": 0,
+      "y": 0,
+      "startX": 0,
+      "endX": 40,
+      "runDirection": 1,
+      "barrelDirection": -1,
+      "spawn": {
+        "x": 3,
+        "z": 0
+      }
+    },
+    {
+      "id": "f1",
+      "index": 1,
+      "y": 4,
+      "startX": 0,
+      "endX": 40,
+      "runDirection": -1,
+      "barrelDirection": 1,
+      "spawn": {
+        "x": 34.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "f2",
+      "index": 2,
+      "y": 8,
+      "startX": 0,
+      "endX": 40,
+      "runDirection": 1,
+      "barrelDirection": -1,
+      "spawn": {
+        "x": 5.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "f3",
+      "index": 3,
+      "y": 12,
+      "startX": 0,
+      "endX": 40,
+      "runDirection": -1,
+      "barrelDirection": 1,
+      "spawn": {
+        "x": 34.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "f4",
+      "index": 4,
+      "y": 16,
+      "startX": 0,
+      "endX": 40,
+      "runDirection": 1,
+      "barrelDirection": -1,
+      "spawn": {
+        "x": 5.5,
+        "z": 0
+      }
+    },
+    {
+      "id": "f5",
+      "index": 5,
+      "y": 20,
+      "startX": 24,
+      "endX": 34,
+      "runDirection": 1,
+      "barrelDirection": 0,
+      "spawn": {
+        "x": 29,
+        "z": 0
+      }
+    }
+  ],
+  "ladders": [
+    {
+      "id": "l0",
+      "x": 36,
+      "width": 1.6,
+      "zMin": -1.4,
+      "zMax": 1.4,
+      "bottomFloorId": "f0",
+      "topFloorId": "f1"
+    },
+    {
+      "id": "l1",
+      "x": 4,
+      "width": 1.6,
+      "zMin": -1.4,
+      "zMax": 1.4,
+      "bottomFloorId": "f1",
+      "topFloorId": "f2"
+    },
+    {
+      "id": "l2",
+      "x": 36,
+      "width": 1.6,
+      "zMin": -1.4,
+      "zMax": 1.4,
+      "bottomFloorId": "f2",
+      "topFloorId": "f3"
+    },
+    {
+      "id": "l3",
+      "x": 4,
+      "width": 1.6,
+      "zMin": -1.4,
+      "zMax": 1.4,
+      "bottomFloorId": "f3",
+      "topFloorId": "f4"
+    },
+    {
+      "id": "l4",
+      "x": 27,
+      "width": 1.6,
+      "zMin": -1.4,
+      "zMax": 1.4,
+      "bottomFloorId": "f4",
+      "topFloorId": "f5"
+    }
+  ],
+  "rescueZone": {
+    "id": "motzfeldt-rescue",
+    "floorId": "f5",
+    "minX": 24,
+    "maxX": 34
+  },
+  "bossSpawn": {
+    "floorId": "f4",
+    "x": 38.5,
+    "z": 0
+  },
+  "playerSpawns": [
+    {
+      "floorId": "f0",
+      "x": 2,
+      "z": -2
+    },
+    {
+      "floorId": "f0",
+      "x": 2,
+      "z": -1
+    },
+    {
+      "floorId": "f0",
+      "x": 2,
+      "z": 0
+    },
+    {
+      "floorId": "f0",
+      "x": 2,
+      "z": 1
+    },
+    {
+      "floorId": "f0",
+      "x": 2,
+      "z": 2
+    }
+  ],
+  "itemBoxes": [
+    {
+      "id": "i1a",
+      "floorId": "f1",
+      "x": 20,
+      "z": -1.5
+    },
+    {
+      "id": "i1b",
+      "floorId": "f1",
+      "x": 20,
+      "z": 1.5
+    },
+    {
+      "id": "i2a",
+      "floorId": "f2",
+      "x": 16,
+      "z": 0
+    },
+    {
+      "id": "i2b",
+      "floorId": "f2",
+      "x": 24,
+      "z": -1.7
+    },
+    {
+      "id": "i2c",
+      "floorId": "f2",
+      "x": 24,
+      "z": 1.7
+    },
+    {
+      "id": "i3a",
+      "floorId": "f3",
+      "x": 20,
+      "z": -1.5
+    },
+    {
+      "id": "i3b",
+      "floorId": "f3",
+      "x": 20,
+      "z": 1.5
+    }
+  ],
+  "barrelSinkX": 1
+}

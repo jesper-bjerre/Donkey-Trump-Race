@@ -48,3 +48,28 @@ export function startMatch(roomCode: string, roomToken: string): Promise<StartMa
     body: '{}',
   });
 }
+
+/** Host-only rematch from the results screen. */
+export function replayMatch(roomCode: string, roomToken: string): Promise<StartMatchResponse> {
+  return request(`/api/v1/rooms/${encodeURIComponent(roomCode)}/replay`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${roomToken}` },
+    body: '{}',
+  });
+}
+
+export interface PrivacyRequestBody {
+  requestType: 'export' | 'deletion';
+  subjectReference: string;
+  contactEmail: string;
+}
+
+export interface PrivacyRequestReceipt {
+  requestId: string;
+  requestStatus: 'received';
+  receivedAt: string;
+}
+
+export function submitPrivacyRequest(body: PrivacyRequestBody): Promise<PrivacyRequestReceipt> {
+  return request('/api/v1/privacy/requests', { method: 'POST', body: JSON.stringify(body) });
+}

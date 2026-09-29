@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 export const ERROR_CODES = [
   'INVALID_NICKNAME',
   'INVALID_ROOM_CODE',
@@ -10,7 +12,9 @@ export const ERROR_CODES = [
   'TOKEN_MISSING',
   'TOKEN_INVALID',
   'TOKEN_FORBIDDEN',
+  'RECONNECT_EXPIRED',
   'RATE_LIMITED',
+  'INVALID_REQUEST_TYPE',
   'BAD_REQUEST',
   'INTERNAL_ERROR',
 ] as const;
@@ -89,10 +93,20 @@ export const ERROR_CATALOG: Record<ErrorCode, CatalogEntry> = {
     userMessage: 'Only the host can do that.',
     recoveryAction: 'none',
   },
+  RECONNECT_EXPIRED: {
+    statusCode: 410,
+    userMessage: 'Your reconnect window has passed and your slot was released. Join again to play.',
+    recoveryAction: 'return-to-entry',
+  },
   RATE_LIMITED: {
     statusCode: 429,
     userMessage: 'Too many attempts. Please wait a moment and try again.',
     recoveryAction: 'retry-later',
+  },
+  INVALID_REQUEST_TYPE: {
+    statusCode: 400,
+    userMessage: 'Choose either a data export or a deletion request.',
+    recoveryAction: 'none',
   },
   BAD_REQUEST: {
     statusCode: 400,
@@ -106,24 +120,76 @@ export const ERROR_CATALOG: Record<ErrorCode, CatalogEntry> = {
   },
 };
 
-export interface ErrorEnvelope {
-  statusCode: number;
-  error: { code: ErrorCode; message: string; recoveryAction: RecoveryAction };
-  requestId?: string;
-}
+export const RECOVERY_ACTIONS = [
+  'edit-nickname',
+  'retry-room-code',
+  'create-new-room',
+  'retry-later',
+  'return-to-entry',
+  'wait-for-players',
+  'rejoin',
+  'none',
+] as const satisfies readonly RecoveryAction[];
+
+export const ErrorEnvelopeSchema = z
+  .object({
+    statusCode: z.number().int().min(400).max(599),
+    error: z
+      .object({
+        code: z.enum(ERROR_CODES),
+        message: z.string().max(200),
+        recoveryAction: z.enum(RECOVERY_ACTIONS),
+      })
+      .strict(),
+    /** Correlates the response with server logs; never contains user data. */
+    correlationId: z.string().max(64).optional(),
+    /** Alias of correlationId kept for older clients. */
+    requestId: z.string().max(64).optional(),
+  })
+  .strict();
+export type ErrorEnvelope = z.infer<typeof ErrorEnvelopeSchema>;
+export type RestErrorEnvelope = ErrorEnvelope;
 
 export function getHttpStatusForErrorCode(code: ErrorCode): number {
   return ERROR_CATALOG[code].statusCode;
 }
 
-export function createErrorEnvelope(code: ErrorCode, requestId?: string): ErrorEnvelope {
+/**
+ * Builds the only error shape the server exposes. It carries catalog text only:
+ * never stacks, raw tokens, nicknames, room ids or environment values.
+ */
+export function createErrorEnvelope(code: ErrorCode, correlationId?: string): ErrorEnvelope {
   const entry = ERROR_CATALOG[code];
   const envelope: ErrorEnvelope = {
     statusCode: entry.statusCode,
     error: { code, message: entry.userMessage, recoveryAction: entry.recoveryAction },
   };
-  if (requestId !== undefined) envelope.requestId = requestId;
+  if (correlationId !== undefined) {
+    envelope.correlationId = correlationId;
+    envelope.requestId = correlationId;
+  }
   return envelope;
+}
+
+export function validateRestErrorEnvelope(value: unknown): ErrorEnvelope | null {
+  const parsed = ErrorEnvelopeSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
+/** The backlog's TOKEN_VIOLATION family, split by what went wrong. */
+export type TokenViolation =
+  'missing' | 'malformed' | 'expired' | 'tampered' | 'wrongRoom' | 'wrongRole';
+
+export function tokenViolationCode(violation: TokenViolation): ErrorCode {
+  switch (violation) {
+    case 'missing':
+      return 'TOKEN_MISSING';
+    case 'wrongRoom':
+    case 'wrongRole':
+      return 'TOKEN_FORBIDDEN';
+    default:
+      return 'TOKEN_INVALID';
+  }
 }
 
 export function isErrorEnvelope(value: unknown): value is ErrorEnvelope {

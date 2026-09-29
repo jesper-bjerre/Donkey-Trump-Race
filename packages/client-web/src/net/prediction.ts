@@ -10,6 +10,18 @@ import {
 
 /** Corrections smaller than this are smoothed; larger ones snap immediately. */
 export const SNAP_THRESHOLD = 2.5;
+/**
+ * Below this distance (world units) the predicted state is already within float noise of
+ * the server's and is left unchanged; above it the replayed server state wins.
+ */
+export const RECONCILE_THRESHOLD = 0.05;
+/** Corrections at or above this distance are reported to the server as desync telemetry. */
+export const DESYNC_REPORT_THRESHOLD = 1;
+
+export interface ReconcileResult {
+  distance: number;
+  applied: boolean;
+}
 const SMOOTHING_PER_SECOND = 12;
 
 export interface PredictionContext {
@@ -70,12 +82,12 @@ export class LocalPredictor {
     return { seq, input };
   }
 
-  reconcile(server: PlayerSnapshot, context: PredictionContext): void {
+  reconcile(server: PlayerSnapshot, context: PredictionContext): ReconcileResult {
     const authoritative = motionFromSnapshot(server);
     if (!this.state) {
       this.state = authoritative;
       this.seq = Math.max(this.seq, server.lastInputSeq);
-      return;
+      return { distance: 0, applied: true };
     }
     this.pending = this.pending.filter((p) => p.seq > server.lastInputSeq);
     let replayed = authoritative;
@@ -91,13 +103,15 @@ export class LocalPredictor {
     const dz = this.state.z - replayed.z;
     const distance = Math.hypot(dx, dy, dz);
     this.lastCorrectionDistance = distance;
-    if (distance > 0.05) this.corrections++;
+    if (distance < RECONCILE_THRESHOLD) return { distance, applied: false };
+    this.corrections++;
     if (distance > SNAP_THRESHOLD) {
       this.offset = { x: 0, y: 0, z: 0 };
     } else {
       this.offset = { x: this.offset.x + dx, y: this.offset.y + dy, z: this.offset.z + dz };
     }
     this.state = replayed;
+    return { distance, applied: true };
   }
 
   /** Hard reset, e.g. after a respawn or when prediction is not applicable. */

@@ -1,23 +1,26 @@
-import { ITEM_DEFINITIONS, itemWeightsForRank } from '@dtr/shared-items';
+import {
+  getItemPickupVolumes,
+  intersectsPickupVolume,
+  ITEM_DEFINITIONS,
+  itemWeightsForRank,
+  type ItemPickupVolume,
+} from '@dtr/shared-items';
 import { getFloorById, type LevelMetadata } from '@dtr/shared-level';
 import type { ItemBoxSnapshot } from '@dtr/shared-protocol';
-import {
-  ITEM_BOX_RADIUS,
-  ITEM_BOX_RESPAWN_MS,
-  PLAYER_RADIUS,
-  type SeededRng,
-} from '@dtr/shared-simulation';
+import { ITEM_BOX_RESPAWN_MS, PLAYER_RADIUS, type SeededRng } from '@dtr/shared-simulation';
 import type { EmitEvent, ItemBoxSim, MatchStats, PlayerSim } from '../types.js';
 import { applyKnockdown, consumeShield, isActive } from './status.js';
 
 /** Server-authoritative item boxes, awards and effects. */
 export class ItemSystem {
   readonly boxes: ItemBoxSim[];
+  private readonly volumes: Map<string, ItemPickupVolume>;
 
   constructor(
     level: LevelMetadata,
     private readonly rng: SeededRng,
   ) {
+    this.volumes = new Map(getItemPickupVolumes(level).map((v) => [v.id, v]));
     this.boxes = level.itemBoxes.map((box) => ({
       id: box.id,
       x: box.x,
@@ -36,13 +39,10 @@ export class ItemSystem {
     for (const player of players) {
       if (!isActive(player) || player.heldItem !== null) continue;
       const m = player.motion;
-      const box = this.boxes.find(
-        (b) =>
-          b.active &&
-          Math.hypot(m.x - b.x, m.z - b.z) < ITEM_BOX_RADIUS + PLAYER_RADIUS &&
-          m.y >= b.y - 0.5 &&
-          m.y < b.y + 2.5,
-      );
+      const box = this.boxes.find((b) => {
+        const volume = this.volumes.get(b.id);
+        return b.active && volume !== undefined && intersectsPickupVolume(volume, m, PLAYER_RADIUS);
+      });
       if (!box) continue;
       const rank = Math.max(0, ranking.indexOf(player));
       const fraction = ranking.length > 1 ? rank / (ranking.length - 1) : 0;

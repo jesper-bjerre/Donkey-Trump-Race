@@ -1,0 +1,10 @@
+{
+  "statusCode": 401,
+  "error": {
+    "code": "TOKEN_INVALID",
+    "message": "Your session has expired. Please rejoin the room.",
+    "recoveryAction": "rejoin"
+  },
+  "correlationId": "corr-fixture-0001",
+  "requestId": "corr-fixture-0001"
+}

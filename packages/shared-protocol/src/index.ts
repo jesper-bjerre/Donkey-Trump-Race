@@ -6,3 +6,4 @@ export * from './snapshot.js';
 export * from './websocket.js';
 
 export const GAME_TITLE = 'Donkey Trump Race';
+export * from './telemetry.js';

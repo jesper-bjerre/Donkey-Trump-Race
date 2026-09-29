@@ -1,0 +1,21 @@
+{
+  "name": "halfHeightJump",
+  "description": "A grounded player holds jump in place; the apex stays half a floor below floor 1.",
+  "start": {
+    "x": 10,
+    "y": 0,
+    "z": 0,
+    "floor": 0
+  },
+  "steps": [
+    {
+      "ticks": 60,
+      "input": {
+        "moveX": 0,
+        "moveZ": 0,
+        "climb": 0,
+        "jump": true
+      }
+    }
+  ]
+}

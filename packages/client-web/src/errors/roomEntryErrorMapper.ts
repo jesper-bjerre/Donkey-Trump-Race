@@ -11,11 +11,20 @@ export type EntryAction =
 
 export interface EntryErrorView {
   code: ErrorCode;
+  /** Catalog text only: never server-provided detail, stacks or raw input. */
   message: string;
   focusTarget: FocusTarget;
   action: EntryAction;
   actionLabel: string;
+  /** Optional second way out, e.g. "Create a new room" when the room is full. */
+  secondaryAction?: EntryAction;
+  secondaryActionLabel?: string;
 }
+
+const CREATE = {
+  secondaryAction: 'create-new-room',
+  secondaryActionLabel: 'Create a new room',
+} as const;
 
 /** Maps a server error code to a user-facing message plus the field to focus and a recovery action. */
 export function mapRoomEntryError(code: ErrorCode): EntryErrorView {
@@ -30,7 +39,6 @@ export function mapRoomEntryError(code: ErrorCode): EntryErrorView {
         actionLabel: 'Edit nickname',
       };
     case 'INVALID_ROOM_CODE':
-    case 'ROOM_NOT_FOUND':
       return {
         code,
         message,
@@ -38,7 +46,17 @@ export function mapRoomEntryError(code: ErrorCode): EntryErrorView {
         action: 'retry-room-code',
         actionLabel: 'Check the code',
       };
+    case 'ROOM_NOT_FOUND':
+      return {
+        code,
+        message,
+        focusTarget: 'roomCode',
+        action: 'retry-room-code',
+        actionLabel: 'Check the code',
+        ...CREATE,
+      };
     case 'ROOM_EXPIRED':
+    case 'RECONNECT_EXPIRED':
       return {
         code,
         message,
@@ -53,6 +71,7 @@ export function mapRoomEntryError(code: ErrorCode): EntryErrorView {
         focusTarget: 'roomCode',
         action: 'retry-later',
         actionLabel: 'Try again',
+        ...CREATE,
       };
     case 'ROOM_IN_PROGRESS':
       return {
@@ -61,6 +80,7 @@ export function mapRoomEntryError(code: ErrorCode): EntryErrorView {
         focusTarget: 'roomCode',
         action: 'return-to-entry',
         actionLabel: 'Pick another room',
+        ...CREATE,
       };
     case 'RATE_LIMITED':
       return { code, message, focusTarget: null, action: 'retry-later', actionLabel: 'Try again' };
