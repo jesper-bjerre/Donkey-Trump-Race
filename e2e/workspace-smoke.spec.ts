@@ -26,7 +26,7 @@ test('missing static assets return 404 instead of the app shell', async ({ reque
   expect(res.status()).toBe(404);
 });
 
-test('the 3D scene contains the MVP level objects', async ({ page }) => {
+test('the 3D scene contains the MVP level objects', { tag: '@webgl' }, async ({ page }) => {
   await createRoom(page, 'Scene Check');
   await page.getByRole('button', { name: 'Start race' }).click();
   const canvas = page.locator('.viewport canvas');

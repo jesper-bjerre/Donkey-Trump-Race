@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { computeProgress, getFloorById, type LevelMetadata } from '@dtr/shared-level';
 import { TICKS_PER_INPUT, TICK_RATE } from '@dtr/shared-simulation';
+import { StructuredError } from '../components/common/StructuredError.js';
 import { RaceHUD, type HudState } from '../components/RaceHUD.js';
 import { cameraDirection, KeyboardController, mapKeysToInput } from '../input/keyboard.js';
 import type { ConnectionStatus } from '../net/GameSocket.js';
 import { INTERPOLATION_DELAY_MS } from '../net/interpolation.js';
 import type { MatchSession } from '../net/MatchSession.js';
+import { SUPPORTED_BROWSERS_TEXT } from '../platform/browserSupport.js';
 import { GameRenderer, type RenderPlayer } from '../render/GameRenderer.js';
 
 const INPUT_INTERVAL_S = TICKS_PER_INPUT / TICK_RATE;
@@ -24,16 +26,25 @@ interface Props {
   match: MatchSession;
   connection: ConnectionStatus;
   onOpenHelp: () => void;
+  onLeave: () => void;
 }
 
-export function MatchScreen({ match, connection, onOpenHelp }: Props) {
+export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hud, setHud] = useState<HudState | null>(null);
+  const [webglFailed, setWebglFailed] = useState(false);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const renderer = new GameRenderer(container, match.level);
+    let renderer: GameRenderer;
+    try {
+      renderer = new GameRenderer(container, match.level);
+    } catch {
+      // No WebGL context (disabled GPU, old browser): explain instead of a blank screen.
+      setWebglFailed(true);
+      return;
+    }
     const keyboard = new KeyboardController();
     let raf = 0;
     let last = performance.now();
@@ -124,6 +135,20 @@ export function MatchScreen({ match, connection, onOpenHelp }: Props) {
       renderer.dispose();
     };
   }, [match]);
+
+  if (webglFailed) {
+    return (
+      <main className="screen interrupted" aria-labelledby="structured-error-title">
+        <StructuredError
+          headingLevel={1}
+          autoFocus
+          title="3D graphics are not available"
+          message={`This browser could not start WebGL, so the race cannot be shown. ${SUPPORTED_BROWSERS_TEXT}`}
+          actions={[{ label: 'Leave room', primary: true, onSelect: onLeave }]}
+        />
+      </main>
+    );
+  }
 
   return (
     <main className="screen match" aria-label="Race">

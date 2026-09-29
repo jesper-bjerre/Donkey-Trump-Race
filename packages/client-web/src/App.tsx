@@ -276,7 +276,12 @@ export function App() {
             </p>
           }
         >
-          <MatchScreen match={match} connection={status} onOpenHelp={() => setHelpOpen(true)} />
+          <MatchScreen
+            match={match}
+            connection={status}
+            onOpenHelp={() => setHelpOpen(true)}
+            onLeave={() => leave()}
+          />
         </Suspense>
       )}
       {screen === 'results' && result && session && (

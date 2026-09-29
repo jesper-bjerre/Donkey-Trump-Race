@@ -47,7 +47,7 @@ test.describe('core screens pass axe', { tag: '@a11y' }, () => {
     await expectNoViolations(page);
   });
 
-  test('race HUD', async ({ page }) => {
+  test('race HUD', { tag: '@webgl' }, async ({ page }) => {
     await createRoom(page, 'Jumpman Løkke');
     await page.getByRole('button', { name: 'Start race' }).click();
     await expect(page.getByRole('status', { name: 'Objective' })).toBeVisible();

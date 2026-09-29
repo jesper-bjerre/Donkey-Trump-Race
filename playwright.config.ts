@@ -27,6 +27,10 @@ export default defineConfig({
     },
     {
       name: 'firefox',
+      // Headless Firefox on GPU-less Linux CI runners gets no WebGL context, so tests that
+      // start the 3D race run on Chromium (software WebGL) there. They still run on Firefox
+      // locally, and the no-WebGL fallback screen has its own component test.
+      grepInvert: process.env.CI ? /@webgl/ : undefined,
       use: {
         ...devices['Desktop Firefox'],
         launchOptions: { firefoxUserPrefs: { 'webgl.force-enabled': true } },

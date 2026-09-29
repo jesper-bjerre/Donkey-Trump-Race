@@ -24,7 +24,9 @@ jobs:
 
   dependency-review:
     name: Dependency review
-    if: github.event_name == 'pull_request'
+    # Needs Settings -> Code security -> Dependency graph. Enable it, then set the repository
+    # variable DEPENDENCY_REVIEW_ENABLED=true to turn this check on.
+    if: github.event_name == 'pull_request' && vars.DEPENDENCY_REVIEW_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -41,6 +43,8 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: 22
+          # No install in this job, so there is no pnpm store to cache.
+          package-manager-cache: false
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
 
@@ -69,6 +73,8 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: '1'
+      - name: Prepare SBOM directory
+        run: mkdir -p artifacts/sbom
       - name: SBOM (CycloneDX)
         uses: anchore/sbom-action@3ad7283483fc7af8ff2b4ea19663c2d5ca935e26 # v0.24.2
         with:

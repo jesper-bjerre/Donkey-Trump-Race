@@ -18,30 +18,38 @@ test.describe('keyboard-only play', { tag: '@keyboard' }, () => {
     }
   });
 
-  test('create a room, start and open help without a mouse', async ({ page }) => {
-    await page.goto('/');
-    await page.keyboard.type('Keyboard Kim');
-    await page.keyboard.press('Tab'); // room code
-    await page.keyboard.press('Tab'); // Create room
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
+  test(
+    'create a room, start and open help without a mouse',
+    { tag: '@webgl' },
+    async ({ page }) => {
+      await page.goto('/');
+      await page.keyboard.type('Keyboard Kim');
+      await page.keyboard.press('Tab'); // room code
+      await page.keyboard.press('Tab'); // Create room
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('heading', { name: 'Lobby' })).toBeVisible();
 
-    const start = page.getByRole('button', { name: 'Start race' });
-    await expect(start).toBeEnabled();
-    for (let i = 0; i < 10 && !(await start.evaluate((el) => el === document.activeElement)); i++) {
-      await page.keyboard.press('Tab');
-    }
-    await expect(start).toBeFocused();
-    await page.keyboard.press('Enter');
-    await expect(page.getByRole('status', { name: 'Objective' })).toBeVisible();
+      const start = page.getByRole('button', { name: 'Start race' });
+      await expect(start).toBeEnabled();
+      for (
+        let i = 0;
+        i < 10 && !(await start.evaluate((el) => el === document.activeElement));
+        i++
+      ) {
+        await page.keyboard.press('Tab');
+      }
+      await expect(start).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.getByRole('status', { name: 'Objective' })).toBeVisible();
 
-    await page.keyboard.press('?');
-    const dialog = page.getByRole('dialog', { name: 'How to play' });
-    await expect(dialog).toBeVisible();
-    await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
-    await page.keyboard.press('Escape');
-    await expect(dialog).toBeHidden();
-  });
+      await page.keyboard.press('?');
+      const dialog = page.getByRole('dialog', { name: 'How to play' });
+      await expect(dialog).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Close' })).toBeFocused();
+      await page.keyboard.press('Escape');
+      await expect(dialog).toBeHidden();
+    },
+  );
 
   test('focus is visible on every interactive landing control', async ({ page }) => {
     await page.goto('/');
