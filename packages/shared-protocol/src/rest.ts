@@ -18,6 +18,8 @@ export const LobbyPlayerSchema = z.object({
   role: RoleSchema,
   ready: z.boolean(),
   connected: z.boolean(),
+  /** Computer player holding a free slot until a human joins. */
+  isBot: z.boolean().optional(),
 });
 export type LobbyPlayer = z.infer<typeof LobbyPlayerSchema>;
 

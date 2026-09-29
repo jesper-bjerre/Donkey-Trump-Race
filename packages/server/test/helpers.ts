@@ -18,6 +18,7 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     tokenSecret: TEST_SECRET,
     tokenTtlMs: 30 * 60 * 1000,
     allowSolo: false,
+    fillWithBots: false,
     clientDistDir: null,
     allowedOrigins: null,
     hsts: false,

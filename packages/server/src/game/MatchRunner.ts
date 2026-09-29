@@ -23,6 +23,7 @@ import {
   TICKS_PER_INPUT,
 } from '@dtr/shared-simulation';
 import { BossBarrelSystem } from './systems/boss.js';
+import { BotController } from './systems/bots.js';
 import { FallRespawnSystem } from './systems/fallRespawn.js';
 import { ItemSystem } from './systems/items.js';
 import { RescueObjective } from './systems/rescue.js';
@@ -59,6 +60,7 @@ export class MatchRunner {
   private readonly boss: BossBarrelSystem;
   private readonly items: ItemSystem;
   private readonly shoves = new PlayerShoveSystem();
+  private readonly bots: BotController;
   private readonly raceStartsAtMs: number;
   private readonly stats: MatchStats = {
     barrelHits: 0,
@@ -83,6 +85,8 @@ export class MatchRunner {
       .map((info) => this.createPlayer(info));
     this.boss = new BossBarrelSystem(this.level, this.rng, this.raceStartsAtMs);
     this.items = new ItemSystem(this.level, this.rng);
+    // Separate stream so bot decisions never shift the boss/item sequence.
+    this.bots = new BotController(this.level, new SeededRng(options.seed ^ 0x5bd1e995));
   }
 
   get tick(): number {
@@ -153,7 +157,12 @@ export class MatchRunner {
       this.pendingEvents.push({ ...e, serverTimeMs: now });
 
     for (const player of this.players) {
-      this.consumeInput(player);
+      if (player.info.isBot) {
+        if (isActive(player) && racing)
+          player.currentInput = this.bots.input(player, this.boss.barrels, now);
+      } else {
+        this.consumeInput(player);
+      }
       if (!isActive(player)) continue;
       if (player.movementDisabledUntilMs > 0 && now >= player.movementDisabledUntilMs) {
         if (player.fallPenalty) emit({ kind: 'respawn', playerId: player.info.id });
@@ -342,9 +351,11 @@ export class MatchRunner {
   }
 
   private checkEnd(now: number): void {
-    const contenders = this.players.filter((p) => !p.removed && p.info.connected);
+    // Bots never hold a race open: it ends once every connected human is done or gone.
+    const humans = this.players.filter((p) => !p.info.isBot);
+    const contenders = humans.filter((p) => !p.removed && p.info.connected);
     const allDone = contenders.length > 0 && contenders.every((p) => p.finishRank !== null);
-    const everyoneGone = this.players.every((p) => p.removed || !p.info.connected);
+    const everyoneGone = humans.every((p) => p.removed || !p.info.connected);
     const graceOver = this.raceEndsAtMs !== null && now >= this.raceEndsAtMs;
     const timeCap = now - this.raceStartsAtMs >= MATCH_MAX_MS;
     if (allDone || graceOver || timeCap || everyoneGone) {
@@ -385,6 +396,7 @@ export class MatchRunner {
       inputTicksLeft: Math.max(0, p.inputTicksLeft),
       connected: p.info.connected,
       progress: r(this.progressOf(p)),
+      ...(p.info.isBot ? { isBot: true } : {}),
     };
   }
 }

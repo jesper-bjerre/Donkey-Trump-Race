@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { computeProgress, getFloorById, type LevelMetadata } from '@dtr/shared-level';
 import { TICKS_PER_INPUT, TICK_RATE } from '@dtr/shared-simulation';
+import { SoundDirector } from '../audio/SoundDirector.js';
+import { SoundEngine } from '../audio/SoundEngine.js';
 import { StructuredError } from '../components/common/StructuredError.js';
 import { RaceHUD, type HudState } from '../components/RaceHUD.js';
 import { cameraDirection, KeyboardController, mapKeysToInput } from '../input/keyboard.js';
@@ -33,6 +35,34 @@ export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [hud, setHud] = useState<HudState | null>(null);
   const [webglFailed, setWebglFailed] = useState(false);
+  const soundRef = useRef<SoundEngine | null>(null);
+  const [muted, setMuted] = useState(false);
+
+  const toggleSound = () => {
+    const sound = soundRef.current;
+    if (!sound) return;
+    sound.setMuted(!sound.muted);
+    setMuted(sound.muted);
+  };
+
+  useEffect(() => {
+    const sound = new SoundEngine();
+    soundRef.current = sound;
+    setMuted(sound.muted);
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== 'KeyM' || event.repeat) return;
+      const target = event.target as HTMLElement | null;
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return;
+      sound.setMuted(!sound.muted);
+      setMuted(sound.muted);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      sound.dispose();
+      soundRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -46,6 +76,7 @@ export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
       return;
     }
     const keyboard = new KeyboardController();
+    const director = soundRef.current ? new SoundDirector(soundRef.current) : null;
     let raf = 0;
     let last = performance.now();
     let inputAccumulator = 0;
@@ -102,9 +133,27 @@ export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
         players.push({ ...remote, isLocal: false });
       }
       const focusState = match.predictor.state;
+      const barrels = match.buffer.sampleBarrels(renderTime);
+      director?.update({
+        players: players.map((p) => ({
+          id: p.id,
+          x: p.x,
+          y: p.y,
+          z: p.z,
+          grounded: p.grounded,
+          climbing: p.climbing !== null,
+          isLocal: p.isLocal,
+        })),
+        barrels,
+        boss: snapshot?.boss ?? null,
+        bossThrowing: snapshot?.boss.throwing ?? false,
+        phase: snapshot?.phase ?? 'countdown',
+        countdownMs: snapshot ? Math.max(0, snapshot.raceStartsAtMs - serverNow) : 0,
+        events: match.events,
+      });
       renderer.render({
         players,
-        barrels: match.buffer.sampleBarrels(renderTime),
+        barrels,
         itemBoxes: snapshot?.itemBoxes ?? [],
         boss: snapshot?.boss ?? null,
         focus:
@@ -133,6 +182,7 @@ export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
       cancelAnimationFrame(raf);
       keyboard.dispose();
       renderer.dispose();
+      soundRef.current?.setRumble(0);
     };
   }, [match]);
 
@@ -154,6 +204,16 @@ export function MatchScreen({ match, connection, onOpenHelp, onLeave }: Props) {
     <main className="screen match" aria-label="Race">
       <div className="viewport" ref={containerRef} />
       {hud && <RaceHUD hud={hud} connection={connection} onOpenHelp={onOpenHelp} />}
+      <button
+        type="button"
+        className="sound-toggle"
+        aria-pressed={!muted}
+        aria-label={muted ? 'Sound off (M to turn on)' : 'Sound on (M to mute)'}
+        title={muted ? 'Sound off — press M' : 'Sound on — press M to mute'}
+        onClick={toggleSound}
+      >
+        {muted ? '🔇' : '🔊'}
+      </button>
     </main>
   );
 }

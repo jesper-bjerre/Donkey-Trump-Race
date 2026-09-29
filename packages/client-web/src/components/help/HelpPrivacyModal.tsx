@@ -71,6 +71,9 @@ export function HelpPrivacyModal({ onClose }: Props) {
           <li>
             <kbd>E</kbd> / <kbd>Shift</kbd> use your item · <kbd>?</kbd> opens this help
           </li>
+          <li>
+            <kbd>M</kbd> sound on/off
+          </li>
         </ul>
         <h3>Hazards &amp; items</h3>
         <ul>

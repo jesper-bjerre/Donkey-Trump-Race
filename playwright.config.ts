@@ -45,6 +45,8 @@ export default defineConfig({
       PORT: String(PORT),
       HOST: '127.0.0.1',
       ALLOW_SOLO: '1',
+      // The suite asserts exact human rosters and finish orders; computer players would add noise.
+      FILL_WITH_BOTS: '0',
       // The suite creates many rooms from one browser; production limits stay at 1x.
       RATE_LIMIT_SCALE: '20',
     },

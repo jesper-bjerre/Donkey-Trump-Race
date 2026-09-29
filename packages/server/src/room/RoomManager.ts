@@ -51,7 +51,26 @@ export interface Room {
 export interface RoomManagerOptions {
   now?: () => number;
   allowSolo?: boolean;
+  /** Keep every room at MAX_PLAYERS racers by filling free slots with computer players. */
+  fillWithBots?: boolean;
   generateCode?: () => string;
+}
+
+/**
+ * A computer racer in a slot no human holds. Bots are derived, never stored, so a
+ * joining human simply takes the lowest free slot and replaces the bot there.
+ */
+export interface BotSlot {
+  id: string;
+  slotIndex: number;
+  nickname: string;
+  color: PlayerColorId;
+}
+
+const BOT_NAMES = ['Robo-Løkke', 'Løkke-Bot', 'Klon-Lars', 'Cyber-Løkke', 'Mekano-Lars'] as const;
+
+export function botIdForSlot(slotIndex: number): string {
+  return `bot_${slotIndex}`;
 }
 
 function defaultCode(): string {
@@ -83,15 +102,35 @@ export class RoomManager {
   private readonly now: () => number;
   private readonly generateCode: () => string;
   readonly allowSolo: boolean;
+  readonly fillWithBots: boolean;
 
   constructor(options: RoomManagerOptions = {}) {
     this.now = options.now ?? Date.now;
     this.generateCode = options.generateCode ?? defaultCode;
     this.allowSolo = options.allowSolo ?? false;
+    this.fillWithBots = options.fillWithBots ?? false;
   }
 
+  /** Humans needed to start; with bot filling one human can race four computer players. */
   get minPlayers(): number {
-    return this.allowSolo ? 1 : MIN_PLAYERS;
+    return this.allowSolo || this.fillWithBots ? 1 : MIN_PLAYERS;
+  }
+
+  /** Computer players for every slot no human holds (none unless bot filling is on). */
+  botSlots(room: Room): BotSlot[] {
+    if (!this.fillWithBots) return [];
+    const used = new Set([...room.slots.values()].map((s) => s.slotIndex));
+    const bots: BotSlot[] = [];
+    for (let slotIndex = 0; slotIndex < MAX_PLAYERS; slotIndex++) {
+      if (used.has(slotIndex)) continue;
+      bots.push({
+        id: botIdForSlot(slotIndex),
+        slotIndex,
+        nickname: BOT_NAMES[slotIndex] ?? `Bot ${slotIndex + 1}`,
+        color: colorForSlot(slotIndex).id,
+      });
+    }
+    return bots;
   }
 
   createRoom(rawNickname: string): { room: Room; player: PlayerSlot } {
@@ -303,7 +342,16 @@ export class RoomManager {
   }
 
   lobbyPlayers(room: Room): LobbyPlayer[] {
-    return [...room.slots.values()].sort((a, b) => a.slotIndex - b.slotIndex).map(toLobbyPlayer);
+    const bots = this.botSlots(room).map((bot): LobbyPlayer => ({
+      ...bot,
+      role: 'participant',
+      ready: true,
+      connected: true,
+      isBot: true,
+    }));
+    return [...[...room.slots.values()].map(toLobbyPlayer), ...bots].sort(
+      (a, b) => a.slotIndex - b.slotIndex,
+    );
   }
 
   private requireNickname(raw: string): string {

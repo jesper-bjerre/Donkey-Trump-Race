@@ -149,6 +149,9 @@ export function RaceHUD({ hud, connection, onOpenHelp }: Props) {
         <span>
           <kbd>E</kbd> item
         </span>
+        <span>
+          <kbd>M</kbd> sound
+        </span>
         <button type="button" className="link-button" onClick={onOpenHelp}>
           Help (?)
         </button>

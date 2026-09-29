@@ -7,13 +7,16 @@ import type { LobbyPlayer } from '@dtr/shared-protocol';
  * before their socket connects, and that first connect is not a "comeback".
  */
 export function describeRosterChange(
-  previous: readonly LobbyPlayer[],
-  next: readonly LobbyPlayer[],
+  allPrevious: readonly LobbyPlayer[],
+  allNext: readonly LobbyPlayer[],
   localPlayerId: string,
   everConnected: ReadonlySet<string> = new Set(
-    previous.filter((p) => p.connected).map((p) => p.id),
+    allPrevious.filter((p) => p.connected && !p.isBot).map((p) => p.id),
   ),
 ): string | null {
+  // Computer players come and go as humans join and leave; only humans are announced.
+  const previous = allPrevious.filter((p) => !p.isBot);
+  const next = allNext.filter((p) => !p.isBot);
   const before = new Map(previous.map((p) => [p.id, p]));
   const after = new Map(next.map((p) => [p.id, p]));
   const messages: string[] = [];

@@ -114,8 +114,13 @@ export function MultiplayerLobby({
 
       <section className="card" aria-labelledby="players-title">
         <h2 id="players-title">
-          Players ({lobby?.players.length ?? 1}/{lobby?.maxPlayers ?? 5})
+          Players ({lobby?.players.filter((p) => !p.isBot).length ?? 1}/{lobby?.maxPlayers ?? 5})
         </h2>
+        {lobby?.players.some((p) => p.isBot) && (
+          <p className="muted">
+            Computer players fill the empty spots — anyone who joins takes one over.
+          </p>
+        )}
         {lobby && (
           <LobbyRoster
             players={lobby.players}

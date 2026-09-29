@@ -334,13 +334,16 @@ export class GameService {
       matchId,
       level: MVP_VERTICAL_MAP,
       seed: randomInt(2 ** 31),
-      players: slots.map((s) => ({
-        id: s.id,
-        slotIndex: s.slotIndex,
-        nickname: s.nickname,
-        color: s.color,
-        connected: s.connected,
-      })),
+      players: [
+        ...slots.map((s) => ({
+          id: s.id,
+          slotIndex: s.slotIndex,
+          nickname: s.nickname,
+          color: s.color,
+          connected: s.connected,
+        })),
+        ...this.rooms.botSlots(room).map((bot) => ({ ...bot, connected: true, isBot: true })),
+      ],
     });
     this.matches.set(room.code, match);
     this.log('match_start', { roomHash: this.roomHash(room.code), matchId, players: slots.length });

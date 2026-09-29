@@ -26,6 +26,27 @@ export function LobbyRoster({ players, maxCapacity, localPlayerId }: Props) {
           );
         }
         const color = colorById(player.color);
+        if (player.isBot) {
+          return (
+            <li
+              key={player.id}
+              className="roster-row bot"
+              style={{ ['--player-color' as string]: color.hex }}
+              aria-label={`${slotLabel(index)}, ${player.nickname}, ${color.label}, computer player until someone joins`}
+            >
+              <img className="avatar" src="/sprites/face-lokke.webp" alt="" />
+              <span className="roster-name">
+                <span className="slot-label">
+                  {slotLabel(index)} · {color.label}
+                </span>
+                <strong>{player.nickname}</strong>
+              </span>
+              <span className="badges">
+                <span className="badge bot">Computer</span>
+              </span>
+            </li>
+          );
+        }
         return (
           <li
             key={player.id}

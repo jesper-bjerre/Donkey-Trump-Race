@@ -77,6 +77,7 @@ Server environment variables:
 | `KEY_VAULT_URL`                                | Optional: read secrets from Key Vault with managed identity instead of env vars               |
 | `ALLOWED_ORIGINS`                              | Comma-separated origins allowed for WebSocket upgrades and cross-origin REST (CORS)           |
 | `ALLOW_SOLO`                                   | Allow 1-player matches (local testing)                                                        |
+| `FILL_WITH_BOTS`                               | Fill free slots with computer players so every race has 5 racers (default on; `0` disables)   |
 | `HSTS`, `TRUST_PROXY`                          | Default on when `NODE_ENV=production`                                                         |
 | `RATE_LIMIT_SCALE`                             | Multiplies REST rate limits (default 1; the e2e suite uses 20)                                |
 | `TELEMETRY_SINK`                               | `none` (default), `memory`, `file` (writes to `TELEMETRY_DATA_DIR`, default `.data`), `azure` |

@@ -14,6 +14,8 @@ export interface ServerConfig {
   tokenSecret: string;
   tokenTtlMs: number;
   allowSolo: boolean;
+  /** Fill free slots with computer players so every race has five racers. */
+  fillWithBots: boolean;
   clientDistDir: string | null;
   /** Browser origins allowed for WebSocket upgrades and cross-origin REST calls. */
   allowedOrigins: string[] | null;
@@ -80,6 +82,7 @@ export async function loadConfig(
     tokenSecret: tokenSecret ?? randomBytes(32).toString('hex'),
     tokenTtlMs: 30 * 60 * 1000,
     allowSolo: truthy(env.ALLOW_SOLO),
+    fillWithBots: env.FILL_WITH_BOTS !== undefined ? truthy(env.FILL_WITH_BOTS) : true,
     clientDistDir: env.CLIENT_DIST_DIR ?? findClientDist(),
     allowedOrigins: env.ALLOWED_ORIGINS
       ? env.ALLOWED_ORIGINS.split(',')

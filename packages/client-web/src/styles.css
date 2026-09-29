@@ -333,6 +333,15 @@ input[aria-invalid='true'] {
   background: #b71c1c;
 }
 
+.badge.bot {
+  background: #455a64;
+  color: #eceff1;
+}
+
+.roster-row.bot {
+  opacity: 0.75;
+}
+
 .lobby-actions {
   display: flex;
   flex-direction: column;
@@ -532,6 +541,20 @@ kbd {
   bottom: 14px;
   right: 14px;
   font-size: 0.8rem;
+}
+
+.sound-toggle {
+  position: absolute;
+  bottom: 40px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 999px;
+  font-size: 1.3rem;
+  line-height: 1;
+  background: rgb(10 12 40 / 0.6);
+  border: 1px solid rgb(255 255 255 / 0.25);
 }
 
 .warn {

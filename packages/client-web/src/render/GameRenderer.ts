@@ -22,6 +22,7 @@ import {
   speechBubbleTexture,
   starTexture,
 } from './textures.js';
+import { LokkeRig } from './lokkeRig.js';
 
 const DECK_THICKNESS = 0.35;
 const CHARACTER_HEIGHT = 1.8;
@@ -48,13 +49,13 @@ export interface RenderFrame {
 
 interface PlayerVisual {
   group: THREE.Group;
-  sprite: THREE.Sprite;
+  rig: LokkeRig;
   ring: THREE.Mesh;
   label: THREE.Sprite;
   stars: THREE.Group;
   shield: THREE.Mesh;
-  front: THREE.SpriteMaterial;
-  back: THREE.SpriteMaterial;
+  front: THREE.Texture;
+  back: THREE.Texture;
   labelKey: string;
 }
 
@@ -159,12 +160,13 @@ export class GameRenderer {
 
   render(frame: RenderFrame): void {
     this.elapsed += frame.dtSeconds;
+    // Camera first: the player rigs billboard toward its orientation for this frame.
+    this.updateCamera(frame);
     this.updatePlayers(frame);
     this.updateBarrels(frame.barrels, frame.dtSeconds);
     this.updateItemBoxes(frame.itemBoxes);
     this.updateBoss(frame.boss);
     this.updateMotzfeldt();
-    this.updateCamera(frame);
     this.renderer.render(this.scene, this.camera);
   }
 
@@ -376,14 +378,9 @@ export class GameRenderer {
     let visual = this.players.get(player.id);
     if (visual) return visual;
     const color = colorById(player.color);
-    const front = new THREE.SpriteMaterial({
-      map: this.texture(spritePath(player.color, 'front')),
-    });
-    const back = new THREE.SpriteMaterial({ map: this.texture(spritePath(player.color, 'back')) });
-    front.transparent = true;
-    back.transparent = true;
-    const sprite = new THREE.Sprite(front);
-    sprite.center.set(0.5, 0);
+    const front = this.texture(spritePath(player.color, 'front'));
+    const back = this.texture(spritePath(player.color, 'back'));
+    const rig = new LokkeRig(CHARACTER_HEIGHT);
 
     const ring = new THREE.Mesh(
       new THREE.RingGeometry(0.42, 0.62, 32),
@@ -429,9 +426,9 @@ export class GameRenderer {
 
     const group = new THREE.Group();
     group.name = `player.jumpman.${player.slotIndex}`;
-    group.add(sprite, ring, label, stars, shield);
+    group.add(rig.root, ring, label, stars, shield);
     this.scene.add(group);
-    visual = { group, sprite, ring, label, stars, shield, front, back, labelKey: '' };
+    visual = { group, rig, ring, label, stars, shield, front, back, labelKey: '' };
     this.players.set(player.id, visual);
     this.renderer.domElement.dataset.playerObjects = [...this.players.values()]
       .map((v) => `${v.group.name}:${v.label.name}:${v.stars.name}`)
@@ -456,7 +453,9 @@ export class GameRenderer {
         const subtitle =
           player.finishRank !== null
             ? `Rescued #${player.finishRank}`
-            : `Player ${player.slotIndex + 1} · ${color.label}`;
+            : player.isBot
+              ? `Computer · ${color.label}`
+              : `Player ${player.slotIndex + 1} · ${color.label}`;
         const { texture, aspect } = labelTexture(title, color.hex, subtitle);
         const material = v.label.material;
         material.map?.dispose();
@@ -468,25 +467,28 @@ export class GameRenderer {
 
       // Show the back when running away from the camera (Mario Kart view), otherwise the front.
       const away = player.facing === frame.cameraDirection || player.climbing !== null;
-      const material = away ? v.back : v.front;
-      v.sprite.material = material;
-      v.sprite.scale.set(CHARACTER_HEIGHT * aspectOf(material.map), CHARACTER_HEIGHT, 1);
+      const texture = away ? v.back : v.front;
+      v.rig.setTexture(texture, aspectOf(texture));
       const disabled = player.movementDisabledUntilMs > frame.serverTimeMs;
-      // Knocked down: the sprite lies on its side.
       const knocked = player.knockedDown && disabled;
-      material.rotation = knocked ? Math.PI / 2 : 0;
-      v.sprite.center.set(0.5, knocked ? 0.3 : 0);
       const blinking = player.fallPenalty && disabled;
-      material.opacity = blinking
-        ? this.reducedMotion
-          ? 0.5
-          : Math.sin(this.elapsed * 20) > 0
-            ? 0.35
-            : 0.9
-        : 1;
-      const running = Math.hypot(player.vx, player.vz) > 0.5 && player.grounded;
-      v.sprite.position.y =
-        running && !this.reducedMotion ? Math.abs(Math.sin(this.elapsed * 14)) * 0.08 : 0;
+      v.rig.setOpacity(
+        blinking ? (this.reducedMotion ? 0.5 : Math.sin(this.elapsed * 20) > 0 ? 0.35 : 0.9) : 1,
+      );
+      // Arms and legs move with walking, jumping and climbing (still for reduced motion).
+      v.rig.update(
+        {
+          x: player.x,
+          y: player.y,
+          z: player.z,
+          grounded: player.grounded,
+          climbing: player.climbing !== null,
+          knockedDown: knocked,
+        },
+        frame.dtSeconds,
+        this.camera,
+        !this.reducedMotion,
+      );
 
       v.stars.visible = player.knockedDown && disabled;
       if (v.stars.visible) {
@@ -505,6 +507,7 @@ export class GameRenderer {
     for (const [id, v] of this.players) {
       if (seen.has(id)) continue;
       this.scene.remove(v.group);
+      v.rig.dispose();
       this.players.delete(id);
     }
   }

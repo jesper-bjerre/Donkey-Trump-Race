@@ -41,6 +41,8 @@ export const PlayerSnapshotSchema = z.object({
   inputTicksLeft: z.number().int().min(0),
   connected: z.boolean(),
   progress: finite,
+  /** Computer-controlled filler racer. */
+  isBot: z.boolean().optional(),
 });
 export type PlayerSnapshot = z.infer<typeof PlayerSnapshotSchema>;
 

@@ -7,6 +7,8 @@ export interface MatchPlayerInfo {
   nickname: string;
   color: PlayerColorId;
   connected: boolean;
+  /** Computer-controlled: the server generates its input every tick. */
+  isBot?: boolean;
 }
 
 export interface PlayerSim {

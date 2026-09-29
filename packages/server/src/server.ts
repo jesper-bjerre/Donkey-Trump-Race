@@ -32,7 +32,11 @@ export async function createServer(
   options: CreateServerOptions = {},
 ): Promise<GameServer> {
   const tokens = new RoomTokenService(config.tokenSecret, config.tokenTtlMs, options.now);
-  const rooms = new RoomManager({ allowSolo: config.allowSolo, now: options.now });
+  const rooms = new RoomManager({
+    allowSolo: config.allowSolo,
+    fillWithBots: config.fillWithBots,
+    now: options.now,
+  });
   let logInfo: (message: string, fields?: Record<string, unknown>) => void = () => undefined;
   let logWarn: (message: string, fields?: Record<string, unknown>) => void = () => undefined;
   let logError: (message: string, fields?: Record<string, unknown>) => void = () => undefined;
