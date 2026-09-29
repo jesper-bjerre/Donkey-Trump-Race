@@ -83,6 +83,11 @@ resource "azurerm_cdn_frontdoor_rule" "headers" {
       header_name   = "X-Frame-Options"
       value         = "DENY"
     }
+    response_header_action {
+      header_action = "Overwrite"
+      header_name   = "Content-Security-Policy"
+      value         = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws: wss:; object-src 'none'; base-uri 'none'; frame-ancestors 'none'"
+    }
   }
 }
 

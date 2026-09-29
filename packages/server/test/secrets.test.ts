@@ -42,6 +42,10 @@ describe('secret resolution', () => {
     const dev = await loadConfig({}, new EnvSecretProvider({}));
     expect(dev.tokenSecret).toHaveLength(64);
     expect(dev.telemetry.sink).toBe('none');
+    expect(dev.rateLimitScale).toBe(1);
+    expect(
+      (await loadConfig({ RATE_LIMIT_SCALE: '20' }, new EnvSecretProvider({}))).rateLimitScale,
+    ).toBe(20);
   });
 
   it('requires a storage URL for the azure telemetry sink', async () => {

@@ -433,6 +433,10 @@ export class GameRenderer {
     this.scene.add(group);
     visual = { group, sprite, ring, label, stars, shield, front, back, labelKey: '' };
     this.players.set(player.id, visual);
+    this.renderer.domElement.dataset.playerObjects = [...this.players.values()]
+      .map((v) => `${v.group.name}:${v.label.name}:${v.stars.name}`)
+      .sort()
+      .join(' ');
     return visual;
   }
 

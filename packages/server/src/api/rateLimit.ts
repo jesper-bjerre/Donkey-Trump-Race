@@ -69,12 +69,13 @@ export class RestRateLimiter {
   constructor(
     overrides: Partial<Record<RestRatePolicy, { limit: number; windowMs: number }>> = {},
     now: () => number = Date.now,
+    scale = 1,
   ) {
     const policies = { ...DEFAULT_REST_POLICIES, ...overrides };
     this.limiters = Object.fromEntries(
       Object.entries(policies).map(([name, p]) => [
         name,
-        new FixedWindowRateLimiter(p.limit, p.windowMs, now),
+        new FixedWindowRateLimiter(Math.round(p.limit * scale), p.windowMs, now),
       ]),
     ) as Record<RestRatePolicy, FixedWindowRateLimiter>;
   }

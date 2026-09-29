@@ -38,6 +38,7 @@ export interface AppOptions {
   allowedOrigins?: string[] | null;
   hsts?: boolean;
   trustProxy?: boolean;
+  rateLimitScale?: number;
 }
 
 export const HSTS_HEADER = 'max-age=31536000; includeSubDomains';
@@ -91,7 +92,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     trustProxy: options.trustProxy ?? false,
     genReqId: () => `corr_${randomBytes(8).toString('hex')}`,
   });
-  const limiter = new RestRateLimiter(options.rateLimits);
+  const limiter = new RestRateLimiter(options.rateLimits, Date.now, options.rateLimitScale);
   const allowedOrigins = new Set(options.allowedOrigins ?? []);
 
   app.addHook('onRequest', async (request, reply) => {

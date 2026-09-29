@@ -92,6 +92,18 @@ locals {
       KQL
       threshold   = 0
     }
+    match-completion = {
+      description = "Fewer than 80% of matches started in the last hour reached a rescue (at least 5 started)."
+      severity    = 2
+      window      = "PT1H"
+      query       = <<-KQL
+        ${local.telemetry}| where event in ("match_start", "match_end")
+        | summarize started = countif(event == "match_start"),
+                    completed = countif(event == "match_end" and tostring(entry.outcome) == "completed" and toint(entry.finishers) > 0)
+        | where started >= 5 and todouble(completed) / started < 0.8
+      KQL
+      threshold   = 0
+    }
     desync-rate = {
       description = "More than 5% of matches in the last hour had a major prediction correction."
       severity    = 3

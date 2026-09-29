@@ -51,12 +51,17 @@ export async function generateBetaReport(options: {
   partitionPrefix?: string;
   now?: Date;
 }): Promise<{ report: BetaSignoffReport; path: string; rejectedLines: number }> {
-  const { events, rejected } = await loadTelemetryEvents(options.blobs, options.partitionPrefix);
+  const { events, rejected, blobCount } = await loadTelemetryEvents(
+    options.blobs,
+    options.partitionPrefix,
+  );
   const report = calculateBetaSignoffReport({
     releaseCandidateId: options.releaseCandidateId,
     events,
     reviews: options.reviews,
     now: options.now,
+    blobCount,
+    rejectedLines: rejected,
   });
   const path = betaReportBlobPath(options.releaseCandidateId);
   await options.blobs.create(path, JSON.stringify(report, null, 2) + '\n');

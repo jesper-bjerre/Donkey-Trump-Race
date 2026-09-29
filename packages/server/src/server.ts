@@ -62,6 +62,7 @@ export async function createServer(
     allowedOrigins: config.allowedOrigins,
     hsts: config.hsts,
     trustProxy: config.trustProxy,
+    rateLimitScale: config.rateLimitScale,
   });
   logInfo = (message, fields) => app.log.info(fields ?? {}, message);
   logWarn = (message, fields) => app.log.warn(fields ?? {}, message);

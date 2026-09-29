@@ -52,6 +52,15 @@ run "retention_defaults_meet_policy" {
   }
 }
 
+run "lifecycle_covers_every_data_prefix" {
+  command = plan
+  assert {
+    condition = alltrue([for p in ["telemetry/telemetry/", "audit/audit/", "telemetry/privacy/requests/", "telemetry/beta-reports/"] :
+    contains(module.blob_storage.lifecycle_prefixes, p)])
+    error_message = "Telemetry, audit, privacy request and beta report blobs must all have retention rules."
+  }
+}
+
 run "short_audit_retention_is_rejected" {
   command = plan
   variables {

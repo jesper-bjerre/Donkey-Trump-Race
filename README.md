@@ -78,6 +78,7 @@ Server environment variables:
 | `ALLOWED_ORIGINS`                              | Comma-separated origins allowed for WebSocket upgrades and cross-origin REST (CORS)           |
 | `ALLOW_SOLO`                                   | Allow 1-player matches (local testing)                                                        |
 | `HSTS`, `TRUST_PROXY`                          | Default on when `NODE_ENV=production`                                                         |
+| `RATE_LIMIT_SCALE`                             | Multiplies REST rate limits (default 1; the e2e suite uses 20)                                |
 | `TELEMETRY_SINK`                               | `none` (default), `memory`, `file` (writes to `TELEMETRY_DATA_DIR`, default `.data`), `azure` |
 | `TELEMETRY_STORAGE_URL`, `TELEMETRY_HASH_SALT` | Blob endpoint and pseudonym salt for the `azure` sink                                         |
 | `CLIENT_DIST_DIR`                              | Built client to serve (auto-detected)                                                         |

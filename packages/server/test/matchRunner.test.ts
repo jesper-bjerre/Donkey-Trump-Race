@@ -73,6 +73,19 @@ describe('MatchRunner timing', () => {
   });
 });
 
+describe('input queue', () => {
+  it('drops duplicate and out-of-order sequence numbers', () => {
+    const { match } = makeMatch(1);
+    const input = { moveX: 1, moveZ: 0, climb: 0, jump: false };
+    expect(match.submitInput('p0', { seq: 5, ...input })).toBe(true);
+    expect(match.submitInput('p0', { seq: 5, ...input })).toBe(false);
+    expect(match.submitInput('p0', { seq: 3, ...input })).toBe(false);
+    expect(match.submitInput('p0', { seq: 6, ...input })).toBe(true);
+    expect(match.submitInput('p0', { seq: 7, ...input, moveX: 9 })).toBe(false);
+    expect(match.submitInput('nobody', { seq: 8, ...input })).toBe(false);
+  });
+});
+
 describe('boss and barrels', () => {
   it('places the boss far right and throws barrels on its interval', () => {
     const { match } = makeMatch(1);

@@ -22,6 +22,7 @@ export function testConfig(overrides: Partial<ServerConfig> = {}): ServerConfig 
     allowedOrigins: null,
     hsts: false,
     trustProxy: false,
+    rateLimitScale: 1,
     telemetry: {
       sink: 'memory',
       hashSalt: 'test-hash-salt-placeholder-000000',

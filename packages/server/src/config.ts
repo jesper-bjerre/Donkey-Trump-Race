@@ -21,6 +21,8 @@ export interface ServerConfig {
   hsts: boolean;
   /** Honour X-Forwarded-* from the Container Apps ingress for client IP and scheme. */
   trustProxy: boolean;
+  /** Multiplies every REST rate limit (1 in production; raised for automated test runs). */
+  rateLimitScale: number;
   telemetry: {
     sink: TelemetrySink;
     hashSalt: string;
@@ -86,6 +88,7 @@ export async function loadConfig(
       : null,
     hsts: env.HSTS !== undefined ? truthy(env.HSTS) : production,
     trustProxy: env.TRUST_PROXY !== undefined ? truthy(env.TRUST_PROXY) : production,
+    rateLimitScale: Math.max(1, Number(env.RATE_LIMIT_SCALE ?? 1) || 1),
     telemetry: {
       sink,
       hashSalt: hashSalt ?? randomBytes(24).toString('hex'),

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import type { TelemetryEvent } from '@dtr/shared-protocol';
 import {
   calculateBetaSignoffReport,
   generateBetaReport,
@@ -103,9 +104,55 @@ describe('beta sign-off report', () => {
       reviews,
     });
     expect(path).toBe('beta-reports/rc-2026-12-10/summary.json');
+    expect(report.source).toMatchObject({ blobCount: 1, rejectedLines: 0 });
+    expect(report.source.firstEventAt! <= report.source.lastEventAt!).toBe(true);
     expect(JSON.parse((await blobs.read(path))!).kpis).toEqual(report.kpis);
     await expect(
       generateBetaReport({ blobs, releaseCandidateId: 'rc-2026-12-10', reviews }),
     ).rejects.toThrow(/already exists/);
+  });
+});
+
+describe('gate boundaries', () => {
+  const approved = {
+    legalIpReview: { status: 'approved' as const },
+    privacyReview: { status: 'approved' as const },
+    accessibilityReview: { status: 'approved' as const },
+  };
+  const gate = (events: ReturnType<typeof parseTelemetryJsonl>['events'], id: string) =>
+    calculateBetaSignoffReport({ releaseCandidateId: 'rc', events, reviews: approved }).gates.find(
+      (g) => g.id === id,
+    )!;
+
+  it('fails match-breaking errors at exactly 2% and passes just below', () => {
+    const { events } = parseTelemetryJsonl(jsonl);
+    const start = events.find((e) => e.name === 'match_start')!;
+    const end = events.find(
+      (e) =>
+        e.name === 'match_end' &&
+        (e as TelemetryEvent<'match_end'>).payload.outcome === 'interrupted',
+    )!;
+    const withRate = (starts: number) => [...Array(starts).fill(start), end];
+    expect(gate(withRate(50), 'match_breaking_errors')).toMatchObject({
+      actual: 0.02,
+      passed: false,
+    });
+    expect(gate(withRate(51), 'match_breaking_errors').passed).toBe(true);
+  });
+
+  it('fails join-within-10s when slow joins push the rate under 90%', () => {
+    const { events } = parseTelemetryJsonl(jsonl);
+    const attempt = events.find((e) => e.name === 'join_attempt')!;
+    const latency = (e: TelemetryEvent) =>
+      e.name === 'join_success' ? (e as TelemetryEvent<'join_success'>).payload.joinLatencyMs : NaN;
+    const fast = events.find((e) => latency(e) < 10_000)!;
+    const slow = events.find((e) => latency(e) > 10_000)!;
+    const sample = (slowCount: number) => [
+      ...Array(10).fill(attempt),
+      ...Array(10 - slowCount).fill(fast),
+      ...Array(slowCount).fill(slow),
+    ];
+    expect(gate(sample(1), 'join_within_10s')).toMatchObject({ actual: 0.9, passed: true });
+    expect(gate(sample(2), 'join_within_10s')).toMatchObject({ actual: 0.8, passed: false });
   });
 });

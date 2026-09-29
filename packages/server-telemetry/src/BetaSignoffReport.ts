@@ -33,6 +33,13 @@ export interface BetaSignoffReport {
   releaseCandidateId: string;
   generatedAt: string;
   eventCount: number;
+  /** Evidence window and provenance, so reviewers can see what the numbers cover. */
+  source: {
+    firstEventAt: string | null;
+    lastEventAt: string | null;
+    blobCount: number | null;
+    rejectedLines: number | null;
+  };
   kpis: BetaKpis;
   gates: KpiGate[];
   reviews: ReleaseGateStates;
@@ -87,6 +94,8 @@ export function calculateBetaSignoffReport(input: {
   events: readonly TelemetryEvent[];
   reviews: ReleaseGateStates;
   now?: Date;
+  blobCount?: number;
+  rejectedLines?: number;
 }): BetaSignoffReport {
   const kpis = rollupBetaKpis(input.events);
   const gates: KpiGate[] = BETA_GATES.map(({ kpi, ...gate }) => {
@@ -106,6 +115,18 @@ export function calculateBetaSignoffReport(input: {
     releaseCandidateId: input.releaseCandidateId,
     generatedAt: (input.now ?? new Date()).toISOString(),
     eventCount: input.events.length,
+    source: {
+      firstEventAt: input.events.reduce<string | null>(
+        (min, e) => (min === null || e.occurredAt < min ? e.occurredAt : min),
+        null,
+      ),
+      lastEventAt: input.events.reduce<string | null>(
+        (max, e) => (max === null || e.occurredAt > max ? e.occurredAt : max),
+        null,
+      ),
+      blobCount: input.blobCount ?? null,
+      rejectedLines: input.rejectedLines ?? null,
+    },
     kpis,
     gates,
     reviews: input.reviews,

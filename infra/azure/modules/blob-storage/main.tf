@@ -143,6 +143,11 @@ output "account_name" { value = azurerm_storage_account.this.name }
 output "blob_endpoint" { value = azurerm_storage_account.this.primary_blob_endpoint }
 output "telemetry_container_name" { value = azurerm_storage_container.telemetry.name }
 output "audit_container_name" { value = azurerm_storage_container.audit.name }
+output "lifecycle_prefixes" {
+  description = "Blob prefixes covered by retention rules (container/prefix)."
+  value       = flatten([for rule in azurerm_storage_management_policy.retention.rule : rule.filters[0].prefix_match])
+}
+
 output "retention_days" {
   value = {
     telemetry        = var.telemetry_retention_days
