@@ -1,0 +1,26 @@
+{
+  "name": "@dtr/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --clear-screen=false src/main.ts",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --packages=external --alias:@dtr/shared-protocol=../shared-protocol/src/index.ts --alias:@dtr/shared-level=../shared-level/src/index.ts --alias:@dtr/shared-simulation=../shared-simulation/src/index.ts --alias:@dtr/shared-items=../shared-items/src/index.ts --outfile=dist/main.js",
+    "start": "node dist/main.js",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dtr/shared-items": "workspace:*",
+    "@dtr/shared-level": "workspace:*",
+    "@dtr/shared-protocol": "workspace:*",
+    "@dtr/shared-simulation": "workspace:*",
+    "@fastify/static": "^10.1.5",
+    "fastify": "^5.12.5",
+    "ws": "^8.22.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.2",
+    "tsx": "^4.23.15"
+  }
+}

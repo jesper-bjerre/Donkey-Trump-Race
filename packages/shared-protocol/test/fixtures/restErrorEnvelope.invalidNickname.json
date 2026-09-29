@@ -1,0 +1,8 @@
+{
+  "statusCode": 400,
+  "error": {
+    "code": "INVALID_NICKNAME",
+    "message": "Use 2–16 letters, numbers, spaces, hyphen, or underscore.",
+    "recoveryAction": "edit-nickname"
+  }
+}

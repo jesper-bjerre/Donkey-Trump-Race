@@ -1,0 +1,1 @@
+{ "type": "client.hello", "protocolVersion": 1, "roomToken": "sample.token" }

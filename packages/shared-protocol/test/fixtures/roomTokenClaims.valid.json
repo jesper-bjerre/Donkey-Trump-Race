@@ -1,0 +1,9 @@
+{
+  "roomCode": "A7K2Q",
+  "playerId": "p_sample1",
+  "slotIndex": 0,
+  "role": "host",
+  "iat": 1790000000000,
+  "exp": 1790001800000,
+  "nonce": "n_sample"
+}
