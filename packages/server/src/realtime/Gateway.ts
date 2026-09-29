@@ -4,23 +4,50 @@ import { WebSocketServer, type RawData, type WebSocket } from 'ws';
 import {
   CLOSE_CODES,
   encodeServerMessage,
+  ERROR_CATALOG,
+  GameError,
   MAX_CLIENT_MESSAGE_BYTES,
   parseClientMessage,
+  type ErrorCode,
 } from '@dtr/shared-protocol';
+import type { AuditLog, PseudonymHasher, TelemetryPublisher } from '@dtr/server-telemetry';
+import { TokenBucket } from '../api/rateLimit.js';
 import type { RoomTokenService } from '../auth/roomTokens.js';
 import type { Connection, GameService } from '../GameService.js';
+
+type Log = (message: string, fields?: Record<string, unknown>) => void;
 
 export interface GatewayOptions {
   game: GameService;
   tokens: RoomTokenService;
+  telemetry?: { publisher: TelemetryPublisher; audit: AuditLog; hasher: PseudonymHasher };
   allowedOrigins?: string[] | null;
   helloTimeoutMs?: number;
   heartbeatIntervalMs?: number;
   heartbeatTimeoutMs?: number;
-  /** Token bucket: sustained messages per second and burst size. */
+  /** Whole-socket token bucket; exceeding it is treated as abuse and closes the socket. */
   rateLimitPerSecond?: number;
   rateLimitBurst?: number;
+  /** client.input bucket; over-rate inputs are dropped, the socket stays open. */
+  inputRatePerSecond?: number;
+  inputBurst?: number;
+  log?: Log;
 }
+
+/** Close codes for errors raised while attaching a socket to its slot. */
+export function closeCodeForAttachError(code: ErrorCode): number {
+  switch (code) {
+    case 'RECONNECT_EXPIRED':
+    case 'ROOM_EXPIRED':
+    case 'ROOM_NOT_FOUND':
+      return CLOSE_CODES.roomClosed;
+    default:
+      return CLOSE_CODES.forbidden;
+  }
+}
+
+/** Throttle window for server.error RATE_LIMITED notices sent to one socket. */
+const RATE_NOTICE_INTERVAL_MS = 2000;
 
 /**
  * Raw `ws` gateway. A socket must authenticate with client.hello before anything else;
@@ -28,8 +55,9 @@ export interface GatewayOptions {
  */
 export class RealtimeGateway {
   private readonly wss: WebSocketServer;
-  private readonly options: Required<Omit<GatewayOptions, 'allowedOrigins'>> & {
+  private readonly options: Required<Omit<GatewayOptions, 'allowedOrigins' | 'telemetry'>> & {
     allowedOrigins: string[] | null;
+    telemetry: GatewayOptions['telemetry'];
   };
 
   constructor(options: GatewayOptions) {
@@ -37,10 +65,14 @@ export class RealtimeGateway {
       helloTimeoutMs: 10_000,
       heartbeatIntervalMs: 5_000,
       heartbeatTimeoutMs: 15_000,
-      rateLimitPerSecond: 60,
-      rateLimitBurst: 90,
+      rateLimitPerSecond: 100,
+      rateLimitBurst: 150,
+      inputRatePerSecond: 40,
+      inputBurst: 20,
       allowedOrigins: null,
+      log: () => undefined,
       ...options,
+      telemetry: options.telemetry,
     };
     // ws closes with 1009 above maxPayload; keep headroom so our own 4413 check runs first.
     this.wss = new WebSocketServer({ noServer: true, maxPayload: MAX_CLIENT_MESSAGE_BYTES * 4 });
@@ -64,15 +96,26 @@ export class RealtimeGateway {
   }
 
   private onConnection(socket: WebSocket): void {
-    const { game, tokens } = this.options;
+    const { game, tokens, telemetry, log } = this.options;
     let connection: Connection | null = null;
     let lastSeen = Date.now();
-    let tokensAvailable = this.options.rateLimitBurst;
-    let lastRefill = Date.now();
+    let lastRateNotice = 0;
+    const messages = new TokenBucket(this.options.rateLimitPerSecond, this.options.rateLimitBurst);
+    const inputs = new TokenBucket(this.options.inputRatePerSecond, this.options.inputBurst);
 
     const close = (code: number, reason: string) => {
       if (socket.readyState === socket.OPEN || socket.readyState === socket.CONNECTING)
         socket.close(code, reason);
+    };
+    const sendError = (code: ErrorCode) => {
+      if (socket.readyState !== socket.OPEN) return;
+      socket.send(
+        encodeServerMessage({
+          type: 'server.error',
+          code,
+          message: ERROR_CATALOG[code].userMessage,
+        }),
+      );
     };
 
     const helloTimer = setTimeout(() => {
@@ -82,7 +125,9 @@ export class RealtimeGateway {
     const heartbeat = setInterval(() => {
       if (Date.now() - lastSeen > this.options.heartbeatTimeoutMs) {
         close(CLOSE_CODES.heartbeatTimeout, 'Heartbeat timeout');
-        socket.terminate();
+        // Give the close frame a moment to reach a half-alive peer, then drop the TCP socket.
+        setTimeout(() => socket.terminate(), 1000).unref();
+        clearInterval(heartbeat);
         return;
       }
       if (socket.readyState === socket.OPEN) socket.ping();
@@ -92,19 +137,48 @@ export class RealtimeGateway {
       lastSeen = Date.now();
     });
 
+    const authenticate = (roomToken: string) => {
+      const claims = tokens.verify(roomToken);
+      if (!claims) {
+        void telemetry?.audit.appendAuditRecord('token_rejected', { reason: 'TOKEN_INVALID' });
+        sendError('TOKEN_INVALID');
+        close(CLOSE_CODES.unauthenticated, 'Invalid token');
+        return;
+      }
+      const candidate: Connection = {
+        roomCode: claims.roomCode,
+        playerId: claims.playerId,
+        send: (payload) => {
+          if (socket.readyState === socket.OPEN) socket.send(payload);
+        },
+        close,
+      };
+      try {
+        game.attach(candidate);
+      } catch (error) {
+        const code = error instanceof GameError ? error.code : 'INTERNAL_ERROR';
+        void telemetry?.audit.appendAuditRecord('token_rejected', {
+          reason: code,
+          roomHash: telemetry.hasher.roomHash(claims.roomCode),
+          playerHash: telemetry.hasher.playerHash(claims.playerId),
+          role: claims.role,
+        });
+        if (!(error instanceof GameError)) log('realtime_attach_failed', { err: error });
+        sendError(code);
+        close(closeCodeForAttachError(code), 'Slot unavailable');
+        return;
+      }
+      connection = candidate;
+      clearTimeout(helloTimer);
+    };
+
     socket.on('message', (data: RawData, isBinary: boolean) => {
       lastSeen = Date.now();
-      const now = Date.now();
-      tokensAvailable = Math.min(
-        this.options.rateLimitBurst,
-        tokensAvailable + ((now - lastRefill) / 1000) * this.options.rateLimitPerSecond,
-      );
-      lastRefill = now;
-      if (tokensAvailable < 1) {
+      if (!messages.take()) {
+        telemetry?.publisher.publish('rate_limited', {}, { scope: 'ws', policy: 'ws.messages' });
         close(CLOSE_CODES.rateLimited, 'Too many messages');
         return;
       }
-      tokensAvailable -= 1;
 
       const size = Array.isArray(data)
         ? data.reduce((sum, b) => sum + b.length, 0)
@@ -125,13 +199,7 @@ export class RealtimeGateway {
         } else if (!connection) {
           close(CLOSE_CODES.unauthenticated, 'Expected client.hello');
         } else {
-          socket.send(
-            encodeServerMessage({
-              type: 'server.error',
-              code: 'BAD_REQUEST',
-              message: 'Invalid message',
-            }),
-          );
+          sendError('BAD_REQUEST');
         }
         return;
       }
@@ -142,50 +210,33 @@ export class RealtimeGateway {
           close(CLOSE_CODES.unauthenticated, 'Expected client.hello');
           return;
         }
-        const claims = tokens.verify(message.roomToken);
-        if (!claims) {
-          socket.send(
-            encodeServerMessage({
-              type: 'server.error',
-              code: 'TOKEN_INVALID',
-              message: 'Session expired',
-            }),
-          );
-          close(CLOSE_CODES.unauthenticated, 'Invalid token');
-          return;
-        }
-        const candidate: Connection = {
-          roomCode: claims.roomCode,
-          playerId: claims.playerId,
-          send: (payload) => {
-            if (socket.readyState === socket.OPEN) socket.send(payload);
-          },
-          close,
-        };
-        if (!game.attach(candidate)) {
-          socket.send(
-            encodeServerMessage({
-              type: 'server.error',
-              code: 'ROOM_EXPIRED',
-              message: 'Your slot is no longer available',
-            }),
-          );
-          close(CLOSE_CODES.forbidden, 'Slot unavailable');
-          return;
-        }
-        connection = candidate;
-        clearTimeout(helloTimer);
+        authenticate(message.roomToken);
         return;
       }
 
       if (message.type === 'client.hello') return;
-      game.handleMessage(connection, message);
+      if (message.type === 'client.input' && !inputs.take()) {
+        // Drop the input; tell the client at most every couple of seconds.
+        const now = Date.now();
+        if (now - lastRateNotice >= RATE_NOTICE_INTERVAL_MS) {
+          lastRateNotice = now;
+          sendError('RATE_LIMITED');
+          telemetry?.publisher.publish('rate_limited', {}, { scope: 'ws', policy: 'ws.input' });
+        }
+        return;
+      }
+      try {
+        game.handleMessage(connection, message);
+      } catch (error) {
+        log('realtime_message_failed', { type: message.type, err: error });
+        sendError('INTERNAL_ERROR');
+      }
     });
 
-    socket.on('close', () => {
+    socket.on('close', (code: number) => {
       clearTimeout(helloTimer);
       clearInterval(heartbeat);
-      if (connection) game.detach(connection);
+      if (connection) game.detach(connection, code);
     });
     socket.on('error', () => socket.terminate());
   }

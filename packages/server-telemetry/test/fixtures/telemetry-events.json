@@ -1,0 +1,210 @@
+[
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00001",
+    "name": "room_create",
+    "occurredAt": "2026-12-10T18:00:00.000Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "roomHash": "2a7d642414803219",
+    "payload": {}
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00002",
+    "name": "join_attempt",
+    "occurredAt": "2026-12-10T18:00:00.010Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "roomHash": "2a7d642414803219",
+    "payload": {}
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00003",
+    "name": "join_success",
+    "occurredAt": "2026-12-10T18:00:00.020Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "d304ec462c36fe4c",
+    "payload": {
+      "slotIndex": 1,
+      "joinLatencyMs": 850
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00004",
+    "name": "join_failure",
+    "occurredAt": "2026-12-10T18:00:00.030Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "roomHash": "2a7d642414803219",
+    "payload": {
+      "errorCode": "ROOM_FULL"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00005",
+    "name": "match_start",
+    "occurredAt": "2026-12-10T18:00:00.040Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "playerCount": 2,
+      "playerHashes": ["dd08999e36057eb5", "d304ec462c36fe4c"]
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00006",
+    "name": "barrel_hit",
+    "occurredAt": "2026-12-10T18:00:00.050Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "slotIndex": 0,
+      "blocked": false
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00007",
+    "name": "fall",
+    "occurredAt": "2026-12-10T18:00:00.060Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "slotIndex": 0
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00008",
+    "name": "item_use",
+    "occurredAt": "2026-12-10T18:00:00.070Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "slotIndex": 0,
+      "item": "tweetStorm"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00009",
+    "name": "desync_correction",
+    "occurredAt": "2026-12-10T18:00:00.080Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "playerSlot": 0,
+      "correctionDistance": 0.8,
+      "tick": 900,
+      "severity": "minor"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00010",
+    "name": "disconnect",
+    "occurredAt": "2026-12-10T18:00:00.090Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "closeCode": 1006,
+      "phase": "match"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00011",
+    "name": "reconnect",
+    "occurredAt": "2026-12-10T18:00:00.100Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "offlineMs": 4200
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00012",
+    "name": "rescue_complete",
+    "occurredAt": "2026-12-10T18:00:00.110Z",
+    "environment": "beta",
+    "privacyClass": "pseudonymous",
+    "roomHash": "2a7d642414803219",
+    "playerHash": "dd08999e36057eb5",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "slotIndex": 0,
+      "rank": 1,
+      "raceTimeMs": 150000
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00013",
+    "name": "match_end",
+    "occurredAt": "2026-12-10T18:00:00.120Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "roomHash": "2a7d642414803219",
+    "matchId": "m_0123456789ab",
+    "payload": {
+      "outcome": "completed",
+      "durationMs": 180000,
+      "playerCount": 2,
+      "finishers": 2
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00014",
+    "name": "match_breaking_error",
+    "occurredAt": "2026-12-10T18:00:00.130Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "roomHash": "2a7d642414803219",
+    "matchId": "m_ba9876543210",
+    "payload": {
+      "errorClass": "TypeError",
+      "phase": "match"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "eventId": "evt_fixture00015",
+    "name": "rate_limited",
+    "occurredAt": "2026-12-10T18:00:00.140Z",
+    "environment": "beta",
+    "privacyClass": "operational",
+    "payload": {
+      "scope": "rest",
+      "policy": "rooms.join"
+    }
+  }
+]

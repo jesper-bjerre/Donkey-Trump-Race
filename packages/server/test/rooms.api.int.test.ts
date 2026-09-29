@@ -117,7 +117,10 @@ describe('room API', () => {
   });
 
   it('rate limits room creation', async () => {
-    server = await createTestServer({}, { rateLimit: { limit: 2, windowMs: 60_000 } });
+    server = await createTestServer(
+      {},
+      { rateLimits: { 'rooms.create': { limit: 2, windowMs: 60_000 } } },
+    );
     await create('One');
     await create('Two');
     const res = await create('Three');

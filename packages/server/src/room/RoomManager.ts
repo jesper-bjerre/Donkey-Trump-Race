@@ -32,6 +32,8 @@ export interface PlayerSlot {
   /** When the player last lost (or has not yet opened) its connection; null while connected. */
   disconnectedAt: number | null;
   joinedAt: number;
+  /** First realtime attach; null until the player's WebSocket has said hello once. */
+  firstConnectedAt: number | null;
 }
 
 export interface Room {
@@ -152,11 +154,44 @@ export class RoomManager {
     room.lastActivityAt = this.now();
   }
 
+  /**
+   * Claims a slot for a (re)connecting socket. The reconnect grace is enforced here, at
+   * the moment of the attempt, rather than waiting for the next sweep: a slot whose
+   * owner has been gone for RECONNECT_GRACE_MS or longer is released and refused.
+   */
+  claimSlot(
+    rawCode: string,
+    playerId: string,
+  ): { room: Room; slot: PlayerSlot; offlineMs: number | null; firstConnect: boolean } {
+    const code = normalizeRoomCode(rawCode);
+    const room = this.rooms.get(code);
+    if (!room) {
+      throw new GameError(this.expiredCodes.has(code) ? 'ROOM_EXPIRED' : 'ROOM_NOT_FOUND');
+    }
+    const slot = room.slots.get(playerId);
+    if (!slot) throw new GameError('RECONNECT_EXPIRED');
+    const now = this.now();
+    if (!slot.connected && slot.disconnectedAt !== null) {
+      if (now - slot.disconnectedAt >= RECONNECT_GRACE_MS) {
+        this.releaseDisconnectedSlot(code, playerId);
+        throw new GameError('RECONNECT_EXPIRED');
+      }
+    }
+    const firstConnect = slot.firstConnectedAt === null;
+    const offlineMs =
+      !firstConnect && slot.disconnectedAt !== null ? now - slot.disconnectedAt : null;
+    slot.connected = true;
+    slot.disconnectedAt = null;
+    if (firstConnect) slot.firstConnectedAt = now;
+    return { room, slot, offlineMs, firstConnect };
+  }
+
   markConnected(code: string, playerId: string): void {
     const slot = this.getSlot(code, playerId);
     if (!slot) return;
     slot.connected = true;
     slot.disconnectedAt = null;
+    slot.firstConnectedAt ??= this.now();
   }
 
   markDisconnected(code: string, playerId: string): void {
@@ -180,6 +215,19 @@ export class RoomManager {
     room.matchCount += 1;
     room.lastActivityAt = this.now();
     return room;
+  }
+
+  /**
+   * Host-initiated rematch from the results screen: everyone still in the room is
+   * treated as ready, then the normal start rules (host, player count) apply.
+   */
+  replayRoom(code: string, playerId: string): Room {
+    const room = this.requireRoom(code);
+    if (room.hostId !== playerId) throw new GameError('TOKEN_FORBIDDEN');
+    if (room.state === 'in_progress') throw new GameError('ROOM_IN_PROGRESS');
+    if (room.lastMatchEndedAt === null) throw new GameError('BAD_REQUEST');
+    for (const slot of room.slots.values()) slot.ready = true;
+    return this.startRoom(code, playerId);
   }
 
   endMatch(code: string): void {
@@ -279,6 +327,7 @@ export class RoomManager {
       // Counts as disconnected until the WebSocket attaches, so abandoned joins are released.
       disconnectedAt: this.now(),
       joinedAt: this.now(),
+      firstConnectedAt: null,
     };
     room.slots.set(slot.id, slot);
     return slot;

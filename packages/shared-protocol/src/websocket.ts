@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { PLAYER_COLOR_IDS } from './colors.js';
 import { ERROR_CODES } from './errors.js';
 import { MAX_ROOM_TOKEN_LENGTH } from './validation.js';
-import { RoleSchema, RoomStateSchema } from './rest.js';
+import { LobbyPlayerSchema, RoomStateSchema } from './rest.js';
 import { AuthoritativeSnapshotSchema, FinishEntrySchema, ItemTypeSchema } from './snapshot.js';
 
 export const PROTOCOL_VERSION = 1;
@@ -58,19 +58,19 @@ export const ClientMessageSchema = z.discriminatedUnion('type', [
   clientInputMessageSchema,
   itemUseCommandSchema,
   z.object({ type: z.literal('client.ping'), protocolVersion: v, t: z.number().finite() }),
+  /** Client prediction reports a reconciliation above RECONCILE_THRESHOLD (telemetry only). */
+  z.object({
+    type: z.literal('client.desyncReport'),
+    protocolVersion: v,
+    tick: z
+      .number()
+      .int()
+      .min(0)
+      .max(2 ** 31),
+    correctionDistance: z.number().finite().min(0).max(1000),
+  }),
 ]);
 export type ClientMessage = z.infer<typeof ClientMessageSchema>;
-
-export const LobbyPlayerSchema = z.object({
-  id: z.string(),
-  slotIndex: z.number().int(),
-  nickname: z.string(),
-  color: z.enum(PLAYER_COLOR_IDS),
-  role: RoleSchema,
-  ready: z.boolean(),
-  connected: z.boolean(),
-});
-export type LobbyPlayer = z.infer<typeof LobbyPlayerSchema>;
 
 export const GameEventSchema = z.object({
   kind: z.enum([
@@ -95,6 +95,9 @@ export const MatchHighlightsSchema = z.object({
   falls: z.number().int(),
   shoves: z.number().int(),
   itemUses: z.number().int(),
+  disconnects: z.number().int(),
+  /** Race time of the winner, null when nobody reached Motzfeldt. */
+  fastestRescueMs: z.number().nullable(),
 });
 export type MatchHighlights = z.infer<typeof MatchHighlightsSchema>;
 
@@ -141,6 +144,10 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     matchId: z.string(),
     finishOrder: z.array(FinishEntrySchema),
     highlights: MatchHighlightsSchema,
+    /** interrupted: the server hit an unrecoverable error and ended the match early. */
+    outcome: z.enum(['completed', 'interrupted']),
+    /** Whether the host may start a rematch with the same room right away. */
+    canReplay: z.boolean(),
   }),
   z.object({
     type: z.literal('server.error'),

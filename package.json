@@ -22,7 +22,8 @@
     "test:integration": "vitest run --project integration",
     "test:a11y": "vitest run --project dom a11y && playwright test --grep @a11y",
     "test:keyboard": "playwright test --grep @keyboard",
-    "fixtures:regenerate": "tsx scripts/fixtures/regenerate.ts && prettier --write --log-level warn packages/*/test/fixtures"
+    "fixtures:regenerate": "tsx scripts/fixtures/regenerate.ts && prettier --write --log-level warn \"packages/*/test/fixtures/**/*.json\"",
+    "beta:summary": "tsx scripts/beta/summary.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",

@@ -6,3 +6,7 @@ playwright-report/
 *.log
 .env
 .env.*
+.data/
+beta-reports/
+artifacts/
+soak-summary.json

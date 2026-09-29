@@ -14,6 +14,7 @@ export const ERROR_CODES = [
   'TOKEN_FORBIDDEN',
   'RECONNECT_EXPIRED',
   'RATE_LIMITED',
+  'INVALID_REQUEST_TYPE',
   'BAD_REQUEST',
   'INTERNAL_ERROR',
 ] as const;
@@ -101,6 +102,11 @@ export const ERROR_CATALOG: Record<ErrorCode, CatalogEntry> = {
     statusCode: 429,
     userMessage: 'Too many attempts. Please wait a moment and try again.',
     recoveryAction: 'retry-later',
+  },
+  INVALID_REQUEST_TYPE: {
+    statusCode: 400,
+    userMessage: 'Choose either a data export or a deletion request.',
+    recoveryAction: 'none',
   },
   BAD_REQUEST: {
     statusCode: 400,

@@ -10,6 +10,17 @@ export type RoomState = z.infer<typeof RoomStateSchema>;
 export const NicknameBodySchema = z.object({ nickname: z.string().max(64) });
 export type NicknameBody = z.infer<typeof NicknameBodySchema>;
 
+export const LobbyPlayerSchema = z.object({
+  id: z.string(),
+  slotIndex: z.number().int(),
+  nickname: z.string(),
+  color: z.enum(PLAYER_COLOR_IDS),
+  role: RoleSchema,
+  ready: z.boolean(),
+  connected: z.boolean(),
+});
+export type LobbyPlayer = z.infer<typeof LobbyPlayerSchema>;
+
 export const RoomSessionSchema = z.object({
   roomCode: z.string(),
   playerId: z.string(),
@@ -18,6 +29,10 @@ export const RoomSessionSchema = z.object({
   role: RoleSchema,
   roomToken: z.string(),
   expiresAt: z.number().int(),
+  /** Absolute WebSocket URL for this deployment (`wss://host/ws`). */
+  websocketUrl: z.string(),
+  /** Lobby roster at the time of the create/join call. */
+  roster: z.array(LobbyPlayerSchema),
 });
 export type RoomSession = z.infer<typeof RoomSessionSchema>;
 
@@ -26,6 +41,7 @@ export const StartMatchResponseSchema = z.object({
   matchId: z.string(),
   state: z.literal('in_progress'),
   serverTimeMs: z.number(),
+  roster: z.array(LobbyPlayerSchema),
 });
 export type StartMatchResponse = z.infer<typeof StartMatchResponseSchema>;
 

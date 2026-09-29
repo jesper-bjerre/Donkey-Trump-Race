@@ -5,11 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch --clear-screen=false src/main.ts",
-    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --packages=external --alias:@dtr/shared-protocol=../shared-protocol/src/index.ts --alias:@dtr/shared-level=../shared-level/src/index.ts --alias:@dtr/shared-simulation=../shared-simulation/src/index.ts --alias:@dtr/shared-items=../shared-items/src/index.ts --outfile=dist/main.js",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --packages=external --alias:@dtr/shared-protocol=../shared-protocol/src/index.ts --alias:@dtr/shared-level=../shared-level/src/index.ts --alias:@dtr/shared-simulation=../shared-simulation/src/index.ts --alias:@dtr/shared-items=../shared-items/src/index.ts --alias:@dtr/server-telemetry=../server-telemetry/src/index.ts --outfile=dist/main.js",
     "start": "node dist/main.js",
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@azure/identity": "^4.13.3",
+    "@azure/keyvault-secrets": "^4.11.2",
+    "@azure/storage-blob": "^12.34.0",
+    "@dtr/server-telemetry": "workspace:*",
     "@dtr/shared-items": "workspace:*",
     "@dtr/shared-level": "workspace:*",
     "@dtr/shared-protocol": "workspace:*",
