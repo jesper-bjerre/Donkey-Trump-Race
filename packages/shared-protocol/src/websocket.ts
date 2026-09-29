@@ -93,6 +93,12 @@ export const ServerMessageSchema = z.discriminatedUnion('type', [
     color: z.enum(PLAYER_COLOR_IDS),
   }),
   z.object({
+    type: z.literal('server.session'),
+    protocolVersion: v,
+    roomToken: z.string(),
+    expiresAt: z.number().int(),
+  }),
+  z.object({
     type: z.literal('server.lobbyState'),
     protocolVersion: v,
     roomCode: z.string(),

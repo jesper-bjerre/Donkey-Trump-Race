@@ -31,6 +31,7 @@
       "shieldUntilMs": 0,
       "finishRank": null,
       "lastInputSeq": 12,
+      "inputTicksLeft": 1,
       "connected": true,
       "progress": 2
     }

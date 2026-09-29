@@ -37,6 +37,8 @@ export const PlayerSnapshotSchema = z.object({
   shieldUntilMs: finite,
   finishRank: z.number().int().nullable(),
   lastInputSeq: z.number().int(),
+  /** Ticks the acknowledged input still has to run on the server. */
+  inputTicksLeft: z.number().int().min(0),
   connected: z.boolean(),
   progress: finite,
 });
